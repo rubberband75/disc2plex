@@ -14,6 +14,7 @@ from disc2plex.models import (
     ClassifyResult,
     EntryStatus,
     FileClass,
+    FileTranscript,
     Manifest,
     MediaFile,
     ScanResult,
@@ -300,3 +301,20 @@ def render_manifest(manifest: Manifest, console: Console, *, title: str) -> None
     counts = {s: sum(1 for e in manifest.entries if e.status is s) for s in EntryStatus}
     summary = ", ".join(f"{n} {s.value}" for s, n in counts.items() if n)
     console.print(f"Summary: {summary or 'nothing to do'}")
+
+
+def render_transcripts(transcripts: list[FileTranscript], console: Console) -> None:
+    """Print each file's transcript slices."""
+    for t in transcripts:
+        console.print(
+            f"[bold]{t.file.name}[/bold]  (audio stream {t.audio_stream_index}, {t.model})"
+        )
+        for s in t.slices:
+            end = s.start_seconds + s.duration_seconds
+            where = f"{format_duration(s.start_seconds)}-{format_duration(end)}"
+            lang = f", {s.language} {s.language_probability:.0%}" if s.language_probability else ""
+            console.print(f"  [dim]{where}{lang}[/dim]")
+            console.print(
+                f"  {s.text or '[yellow](no speech recognised)[/yellow]'}", soft_wrap=True
+            )
+        console.print()

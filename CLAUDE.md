@@ -205,6 +205,7 @@ disc2plex undo   <manifest.json> [--dry-run] [--yes]  # reverse a previous apply
 disc2plex tmdb   search "Show Name"              # helper to find TMDB IDs
 disc2plex tmdb   show <tmdb-id>                  # seasons + episode-group IDs for --order
 disc2plex tmdb   season <tmdb-id> <n> [--order]  # episode list in the chosen order
+disc2plex transcribe <rip_dir> [-f NAME] [--json]  # Whisper transcript of each episode's middle (debug)
 ```
 
 Common options:
@@ -273,6 +274,7 @@ cp .env.example .env     # then fill in keys
 
 # dev loop
 uv run pytest -q
+DISC2PLEX_REAL_WHISPER=1 uv run pytest -q tests/test_transcribe.py -k real   # opt-in real Whisper eval
 uv run ruff check . && uv run ruff format .
 uv run mypy              # strict mode, configured for src/ in pyproject.toml
 
@@ -384,3 +386,11 @@ When starting, ask the user about these and record answers in this file:
   - TMDB's "Bluray Release" DVD group merges e01+e02 into its first entry (lists e01, then e03). Not handled specially yet; aired order works better for this show.
   - Trimmed real ffprobe metadata (no paths, no video) is in `tests/fixtures/real/`, trimmed real TMDB responses in `tests/fixtures/tmdb/*66573*`, and `tests/test_real_discs.py` locks in this disc's behavior.
   - Dev hardware (from `.device-info`, gitignored): Ryzen 7 5700X (8C/16T), 64 GB RAM, AMD RX 6700 XT. CTranslate2/faster-whisper has no ROCm support, so Whisper runs on CPU (int8).
+- 2026-10-10: Milestone 8 (Whisper transcription) done and verified on the real Blu-ray. Added `faster-whisper` (regular dependency, imported lazily) and `numpy` (declared because `transcribe.py` imports it). `HF_TOKEN` in `.env` is picked up by huggingface_hub for model downloads.
+  - Default model `small` (user OK'd; quality is sufficient: names get mangled, plot is clear), CPU int8 (no CUDA on this AMD machine). About 23 s per 4-minute slice on the 5700X, including model load per run.
+  - Audio: best track by language (en/eng aliases), not commentary, default, most channels. A 240 s slice centred on the middle (avoids recaps/credits); `--opening` adds a 120 s slice at 1:00. ffmpeg fast-seeks (`-ss` before `-i`) to a 16 kHz mono WAV in a temp dir; source files are only read.
+  - The WAV is decoded with stdlib `wave` + numpy and passed to Whisper as samples, bypassing faster-whisper's PyAV decoder (faster-whisper 1.2.1 + PyAV 19 crash with "unexpected keyword argument 'metadata_errors'").
+  - Transcripts are cached in `~/.cache/disc2plex/transcripts/`, keyed by resolved path + size + mtime + stream + slice + model.
+  - New debugging command `disc2plex transcribe <rip> [-f NAME] [--all] [--whisper-model] [--lang] [--opening] [--json]`; by default it transcribes EPISODE/UNKNOWN titles only.
+  - The manual real-Whisper eval from section 10 is an opt-in test: `DISC2PLEX_REAL_WHISPER=1 uv run pytest -q tests/test_transcribe.py -k real` (flite speaks a sentence that Whisper must hear). All other tests fake Whisper but use real ffmpeg on generated clips.
+  - Real transcripts of disc 1 are consistent with the `--disc 1` aired-order plan (t02 = "Jason Mendoza", etc.).

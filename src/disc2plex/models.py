@@ -281,6 +281,28 @@ class Manifest(BaseModel):
     undone_at: str | None = None
 
 
+class SliceTranscript(_Frozen):
+    """Speech recognised in one slice of a file's audio."""
+
+    start_seconds: float
+    duration_seconds: float
+    text: str
+    language: str | None = None
+    # Whisper's language detection confidence, if it detected the language.
+    language_probability: float | None = None
+
+
+class FileTranscript(_Frozen):
+    file: Path
+    audio_stream_index: int
+    model: str
+    slices: tuple[SliceTranscript, ...] = ()
+
+    @property
+    def text(self) -> str:
+        return "\n".join(s.text for s in self.slices if s.text)
+
+
 class ScanFailure(_Frozen):
     """A file that could not be probed (corrupt, truncated, not really video...)."""
 

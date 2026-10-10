@@ -22,8 +22,9 @@ uv run disc2plex --help
 
 ## Usage
 
-All commands work. Matching uses title order and runtimes; content verification
-(speech transcription) is planned.
+All commands work. Matching uses title order and runtimes. Local Whisper
+transcription works (`transcribe`); using transcripts to verify matches is next.
+The first transcription downloads the Whisper model (~480 MB for `small`).
 
 ```bash
 disc2plex scan ./sample_rip
@@ -34,6 +35,7 @@ disc2plex undo ~/.local/share/disc2plex/manifests/<run>.json
 disc2plex tmdb search "Show Name"
 disc2plex tmdb show 1437                 # seasons and episode groups (DVD order IDs)
 disc2plex tmdb season 1437 1 --order dvd
+disc2plex transcribe ./FIREFLY_D1 -f FIREFLY_D1_t01.mkv   # local Whisper, CPU is fine
 ```
 
 `plan` is always a dry run. It prints where each file would go, how confident the

@@ -6,6 +6,7 @@ this module only parses options, prompts, and prints.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import shutil
@@ -30,7 +31,14 @@ from disc2plex.apply import (
 )
 from disc2plex.classify import classify
 from disc2plex.config import load_dotenv
-from disc2plex.models import EntryStatus, PlanAction, ScanResult, ShowSummary
+from disc2plex.models import (
+    EntryStatus,
+    FileClass,
+    FileTranscript,
+    PlanAction,
+    ScanResult,
+    ShowSummary,
+)
 from disc2plex.pipeline import PlanRequest, PlanRun, parse_disc_range, run_plan
 from disc2plex.plan import ExtrasMode, PlanOptions
 from disc2plex.report import (
@@ -41,6 +49,7 @@ from disc2plex.report import (
     render_search_results,
     render_season,
     render_show,
+    render_transcripts,
     scan_to_json,
 )
 from disc2plex.scan import ProbeCache, default_cache_path, scan_directory
@@ -51,6 +60,15 @@ from disc2plex.tmdb import (
     TMDBError,
     default_tmdb_cache_dir,
     season_episodes,
+)
+from disc2plex.transcribe import (
+    WHISPER_MODELS,
+    FasterWhisperTranscriber,
+    TranscriptCache,
+    TranscriptionError,
+    choose_slices,
+    default_transcript_cache_dir,
+    transcribe_file,
 )
 
 app = typer.Typer(
@@ -417,6 +435,68 @@ def undo(
     if any(e.status is EntryStatus.DONE for e in result.entries):
         console.print("[yellow]Some operations could not be reversed; see notes above.[/yellow]")
         raise typer.Exit(code=1)
+
+
+@app.command()
+def transcribe(
+    rip_dir: RipDir,
+    file: Annotated[
+        list[str] | None,
+        typer.Option("--file", "-f", help="Only these file names (repeatable)."),
+    ] = None,
+    all_files: Annotated[
+        bool, typer.Option("--all", help="Include Play-All, extras, and junk titles.")
+    ] = False,
+    whisper_model: WhisperOpt = "small",
+    lang: LangOpt = "en",
+    opening: Annotated[
+        bool, typer.Option("--opening", help="Also transcribe a slice near the start.")
+    ] = False,
+    no_cache: Annotated[
+        bool, typer.Option("--no-cache", help="Re-transcribe even if cached.")
+    ] = False,
+    json_out: JsonOpt = False,
+) -> None:
+    """Transcribe a slice of each episode's audio with local Whisper (debugging aid)."""
+    require_ffprobe()
+    if whisper_model not in WHISPER_MODELS:
+        raise _fail(f"--whisper-model must be one of {', '.join(WHISPER_MODELS)}")
+    load_dotenv()  # HF_TOKEN avoids anonymous rate limits on the first model download
+    scan_result = scan_directory(rip_dir, cache=ProbeCache(default_cache_path()))
+    classified = classify(scan_result.files)
+    wanted = set(file or ())
+    targets = [
+        item.file
+        for item in classified.items
+        if (item.file.path.name in wanted if wanted else True)
+        and (all_files or wanted or item.file_class in (FileClass.EPISODE, FileClass.UNKNOWN))
+    ]
+    if wanted - {t.path.name for t in targets}:
+        raise _fail(
+            f"not found in {rip_dir}: {', '.join(sorted(wanted - {t.path.name for t in targets}))}"
+        )
+    transcriber = FasterWhisperTranscriber(whisper_model)
+    cache = None if no_cache else TranscriptCache(default_transcript_cache_dir())
+    results: list[FileTranscript] = []
+    for media in targets:
+        if not json_out:
+            typer.secho(f"Transcribing {media.path.name}...", err=True, dim=True)
+        try:
+            results.append(
+                transcribe_file(
+                    media,
+                    transcriber,
+                    lang=lang,
+                    slices=choose_slices(media.duration_seconds, include_opening=opening),
+                    cache=cache,
+                )
+            )
+        except TranscriptionError as exc:
+            typer.secho(f"Skipped {media.path.name}: {exc}", err=True, fg=typer.colors.YELLOW)
+    if json_out:
+        typer.echo(json.dumps([r.model_dump(mode="json") for r in results], indent=2))
+    else:
+        render_transcripts(results, Console())
 
 
 @contextmanager
