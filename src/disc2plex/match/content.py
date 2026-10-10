@@ -8,7 +8,10 @@ signal, never taken as truth:
 1. ``ContentVerifier.gather`` collects answers for the files worth checking;
 2. the heuristic aligner re-runs with those answers as votes in its pair scores,
    so a few clear identifications can pin down where the disc starts;
-3. ``apply_evidence`` boosts agreeing files and demotes or (cautiously)
+3. ``ContentVerifier.listen_again`` transcribes more excerpts of any file whose
+   answer still contradicts its match (or that got no clear answer) and asks
+   again with every excerpt, then the aligner re-runs once more;
+4. ``apply_evidence`` boosts agreeing files and demotes or (cautiously)
    reassigns disagreeing ones; ``combine.decide`` still flags any two files
    claiming one episode.
 """
@@ -77,6 +80,9 @@ class ContentConfig:
     min_transcript_chars: int = 150
     max_llm_calls: int = 30
     confident_threshold: float = 0.85
+    # Second listen: more excerpts for files whose first answer doesn't settle them.
+    second_listen: bool = True
+    second_slice_seconds: float = 150.0
 
 
 SYSTEM_PROMPT = """\
@@ -121,9 +127,17 @@ def answer_schema(codes: Sequence[str]) -> dict[str, Any]:
 
 
 def build_user_prompt(
-    season: SeasonEpisodes, transcript: FileTranscript, file_duration: float
+    season: SeasonEpisodes,
+    transcript: FileTranscript,
+    file_duration: float,
+    *,
+    double: bool = False,
 ) -> str:
-    """Show, candidate episodes with synopses, then numbered transcript excerpts."""
+    """Show, candidate episodes with synopses, then numbered transcript excerpts.
+
+    With several excerpts the prompt says whether they share one episode, or
+    (``double``) may come from two consecutive episodes.
+    """
     show = season.show
     lines = [
         f"Show: {show.name} ({show.year or 'year unknown'})",
@@ -134,6 +148,15 @@ def build_user_prompt(
         lines.append(f'- {episode_code(e)} "{e.title}": {overview}')
     lines.append("")
     lines.append(f"The video file is {format_duration(file_duration)} long.")
+    if len(transcript.slices) > 1:
+        lines.append(
+            "It is about twice the usual length and probably holds two consecutive "
+            "episodes, so excerpts from its first half may be a different episode than "
+            "excerpts from its second half."
+            if double
+            else "All excerpts come from the same episode, so weigh them together and "
+            "normally give each the same answer."
+        )
     for number, s in enumerate(transcript.slices, start=1):
         end = s.start_seconds + s.duration_seconds
         lines.append(
@@ -196,6 +219,7 @@ class ContentUsage:
     """Running totals for the run's report."""
 
     files_checked: int = 0
+    files_relistened: int = 0
     llm_calls: int = 0
     cached_calls: int = 0
     input_tokens: int = 0
@@ -206,7 +230,9 @@ class ContentUsage:
     @property
     def summary_line(self) -> str:
         return (
-            f"content verification ({self.backend}): {self.files_checked} file(s) checked, "
+            f"content verification ({self.backend}): {self.files_checked} file(s) checked"
+            + (f" ({self.files_relistened} listened to twice)" if self.files_relistened else "")
+            + ", "
             f"{self.llm_calls} LLM call(s) ({self.cached_calls} from cache), "
             f"{self.input_tokens:,} input / {self.output_tokens:,} output tokens"
         )
@@ -218,11 +244,13 @@ def ask_llm(
     transcript: FileTranscript,
     file_duration: float,
     usage: ContentUsage,
+    *,
+    double: bool = False,
 ) -> list[ExcerptAnswer] | None:
     """One LLM question per file, retried once on malformed JSON. None = no signal."""
     codes = [episode_code(e) for e in season.episodes]
     schema = answer_schema(codes)
-    user = build_user_prompt(season, transcript, file_duration)
+    user = build_user_prompt(season, transcript, file_duration, double=double)
     for attempt in (1, 2):
         response = llm.complete_json(SYSTEM_PROMPT, user, schema)
         usage.llm_calls += 1
@@ -244,6 +272,10 @@ class FileEvidence:
     """What the transcript said about one file."""
 
     answers: tuple[ExcerptAnswer, ...]
+    # The excerpts the answers refer to (kept so a second listen can add to them).
+    transcript: FileTranscript | None = None
+    # After a second listen: the first answers, which ``answers`` replaced.
+    first_answers: tuple[ExcerptAnswer, ...] = ()
 
     def useful(self, min_confidence: float) -> list[ExcerptAnswer]:
         return [a for a in self.answers if a.episode and a.confidence >= min_confidence]
@@ -276,13 +308,23 @@ def _consecutive(episodes: Sequence[EpisodeInfo]) -> bool:
     return len(seasons) == 1 and numbers == list(range(numbers[0], numbers[0] + len(numbers)))
 
 
-def _describe(answers: Sequence[ExcerptAnswer]) -> str:
+def _describe(answers: Sequence[ExcerptAnswer], lead: str = "transcript says ") -> str:
     parts = []
     for a in answers:
         what = f'{episode_code(a.episode)} "{a.episode.title}"' if a.episode else "no match"
         detail = f": {a.reasoning}" if a.reasoning else ""
         parts.append(f"excerpt {a.excerpt} -> {what} ({a.confidence:.0%}){detail}")
-    return "transcript says " + "; ".join(parts)
+    return lead + "; ".join(parts)
+
+
+def settled(a: Assignment, ev: FileEvidence, cfg: ContentConfig) -> bool:
+    """Whether the transcript answers back up the file's current match.
+
+    Not settled: no clear answer, an answer naming an episode the file isn't
+    matched to, or a file with no match at all.
+    """
+    useful = ev.useful(cfg.min_answer_confidence)
+    return bool(useful and a.episodes) and {u.episode for u in useful} <= set(a.episodes)
 
 
 def _claimed_with_support(
@@ -374,7 +416,12 @@ def _combine_one(
     cfg: ContentConfig,
     start_unconfirmed: bool = False,
 ) -> Assignment:
-    reasons = [*a.reasons, _describe(ev.answers)]
+    reasons = list(a.reasons)
+    if ev.first_answers:
+        reasons.append(_describe(ev.first_answers, "first excerpt: "))
+        reasons.append(_describe(ev.answers, "listened again with more excerpts: "))
+    else:
+        reasons.append(_describe(ev.answers))
     signals = dict(a.signals)
     useful = ev.useful(cfg.min_answer_confidence)
     if not useful:
@@ -418,11 +465,27 @@ def _combine_one(
         for e in new_eps
         if (owner := _claimed_with_support(e, a, assignments, evidence, cfg)) is not None
     ]
+    scattered = len(new_eps) > 2 or (len(new_eps) == 2 and not _consecutive(new_eps))
+    if scattered:
+        # One file can't be three episodes, or two that aren't consecutive.
+        reasons.append(
+            f"excerpts point to different episodes ({label}); probably a compilation "
+            "or extra (bloopers, recap), not an episode; needs review"
+        )
+        return update(confidence=round(min(h, cfg.disagree_cap), 3))
     if supported:
         holder = supported[0].file.path.name
-        reasons.append(
-            f"content suggests {label}, but {holder} has stronger evidence for it; needs review"
-        )
+        if ev.first_answers and content_conf >= cfg.reassign_min_confidence:
+            # Still clear after a second listen: more likely a second copy than a mistake.
+            reasons.append(
+                f"content clearly says {label}, but {holder} holds it with evidence of its "
+                "own; possibly another cut of the same episode (extended/broadcast); "
+                "needs review"
+            )
+        else:
+            reasons.append(
+                f"content suggests {label}, but {holder} has stronger evidence for it; needs review"
+            )
         return update(confidence=round(min(h, cfg.disagree_cap), 3))
     fit = runtime_fit(a.file.duration_seconds, new_eps, heuristic_cfg)
     runtime_ok = fit is None or fit >= MISMATCH_FIT
@@ -443,19 +506,50 @@ def _combine_one(
 # --- orchestration ------------------------------------------------------------
 
 
+def _looks_double(a: Assignment, single_episode_seconds: float | None) -> bool:
+    return len(a.episodes) >= 2 or (
+        single_episode_seconds is not None
+        and a.file.duration_seconds >= 1.6 * single_episode_seconds
+    )
+
+
 def _slices_for(a: Assignment, single_episode_seconds: float | None) -> list[SliceSpec]:
     """One middle slice, or one per half for files that look like two episodes."""
     duration = a.file.duration_seconds
-    looks_double = len(a.episodes) >= 2 or (
-        single_episode_seconds is not None and duration >= 1.6 * single_episode_seconds
-    )
-    if not looks_double:
+    if not _looks_double(a, single_episode_seconds):
         return choose_slices(duration)
     length = min(180.0, duration / 4)
     return [
         SliceSpec(max(0.0, duration * 0.25 - length / 2), length),
         SliceSpec(max(0.0, duration * 0.75 - length / 2), length),
     ]
+
+
+def _second_slices(
+    a: Assignment, single_episode_seconds: float | None, length: float
+) -> list[SliceSpec]:
+    """Excerpts for a second listen: a quarter and three quarters of the way
+    through each episode-sized part (the first listen covered each part's middle).
+
+    These stay clear of "previously on" recaps and end credits, and don't
+    overlap the first excerpts.
+    """
+    duration = a.file.duration_seconds
+    parts = 2 if _looks_double(a, single_episode_seconds) else 1
+    part = duration / parts
+    length = min(length, part / 4)
+    if length <= 0:
+        return []
+    return [
+        SliceSpec(max(0.0, part * (index + fraction) - length / 2), length)
+        for index in range(parts)
+        for fraction in (0.25, 0.75)
+    ]
+
+
+def _merged(first: FileTranscript, extra: FileTranscript) -> FileTranscript:
+    slices = sorted((*first.slices, *extra.slices), key=lambda s: s.start_seconds)
+    return first.model_copy(update={"slices": tuple(slices)})
 
 
 def _typical_single_seconds(match: MatchResult) -> float | None:
@@ -532,7 +626,12 @@ class ContentVerifier:
             evidence.usage.files_checked += 1
             try:
                 answers = ask_llm(
-                    self.llm, season, transcript, a.file.duration_seconds, evidence.usage
+                    self.llm,
+                    season,
+                    transcript,
+                    a.file.duration_seconds,
+                    evidence.usage,
+                    double=_looks_double(a, typical),
                 )
             except LLMError as exc:
                 evidence.usage.notes.append(f"content verification stopped: {exc}")
@@ -540,5 +639,77 @@ class ContentVerifier:
             if answers is None:
                 evidence.problems[path] = "LLM reply unusable, no signal"
                 continue
-            evidence.by_file[path] = FileEvidence(answers=tuple(answers))
+            evidence.by_file[path] = FileEvidence(answers=tuple(answers), transcript=transcript)
         return evidence
+
+    def listen_again(self, match: MatchResult, season: SeasonEpisodes, evidence: Evidence) -> int:
+        """Second listen for files whose answers don't settle their match (or for
+        every checked file, when the transcripts disagree about an inferred start).
+
+        ``match`` is the alignment that already used the first answers as votes.
+        Transcribes more excerpts of each unsettled file and asks again with all
+        of them; the new answers replace the old ones in ``evidence`` (the old ones
+        are kept for the report). Returns how many files got new answers.
+        """
+        if not self.config.second_listen or not season.episodes:
+            return 0
+        typical = _typical_single_seconds(match)
+        # When the transcripts can't agree on an inferred start, the files that
+        # "agree" may be the wrong ones (a wrong answer can pull the start onto
+        # itself), so every checked file gets a second listen.
+        agree, disagree = _agreement_counts(match.assignments, evidence, self.config)
+        contested = match.start_source == "inferred" and disagree and agree <= 2 * disagree
+        unsettled = [
+            (a, ev)
+            for a in match.assignments
+            if (ev := evidence.by_file.get(a.file.path)) is not None
+            and ev.transcript is not None
+            and not ev.first_answers
+            and (contested or not settled(a, ev, self.config))
+        ]
+        changed = 0
+        for position, (a, ev) in enumerate(unsettled):
+            assert ev.transcript is not None
+            if evidence.usage.llm_calls >= self.config.max_llm_calls:
+                evidence.usage.notes.append(
+                    f"LLM call cap ({self.config.max_llm_calls}) reached; "
+                    f"{len(unsettled) - position} file(s) not listened to again"
+                )
+                break
+            path = a.file.path
+            slices = _second_slices(a, typical, self.config.second_slice_seconds)
+            try:
+                extra = transcribe_file(
+                    a.file,
+                    self.transcriber,
+                    lang=self.lang,
+                    slices=slices,
+                    cache=self.transcript_cache,
+                )
+            except TranscriptionError as exc:
+                log.warning("second listen of %s failed: %s", path.name, exc)
+                continue
+            if len(extra.text) < self.config.min_transcript_chars:
+                continue
+            transcript = _merged(ev.transcript, extra)
+            log.info("listening again to %s (%d excerpts)", path.name, len(transcript.slices))
+            try:
+                answers = ask_llm(
+                    self.llm,
+                    season,
+                    transcript,
+                    a.file.duration_seconds,
+                    evidence.usage,
+                    double=_looks_double(a, typical),
+                )
+            except LLMError as exc:
+                evidence.usage.notes.append(f"content verification stopped: {exc}")
+                break
+            if answers is None:
+                continue
+            evidence.usage.files_relistened += 1
+            evidence.by_file[path] = FileEvidence(
+                answers=tuple(answers), transcript=transcript, first_answers=ev.answers
+            )
+            changed += 1
+        return changed

@@ -181,6 +181,8 @@ def run_plan(
         evidence = verifier.gather(heuristic, season, request.verify)
         if evidence.by_file:
             heuristic = align(evidence.votes(verifier.config.min_answer_confidence))
+            if verifier.listen_again(heuristic, season, evidence):
+                heuristic = align(evidence.votes(verifier.config.min_answer_confidence))
         heuristic = apply_overrides(apply_evidence(heuristic, evidence, verifier.config), overrides)
     matched = decide(heuristic, request.thresholds)
     plan = build_plan(

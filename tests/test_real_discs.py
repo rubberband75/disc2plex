@@ -92,3 +92,36 @@ def test_bluray_group_order_never_confidently_wrong(
     run = plan(fake_rip, tmp_path, disc=disc, order="dvd")
     label, status = by_title(run)["t00"]
     assert status is not AssignmentStatus.CONFIDENT or label == "s01e01-e02"
+
+
+# --- Parks and Recreation, Season 1, DVD (MakeMKV, one disc) -----------------------
+#
+# Seven episode-length titles for six episodes: t06 (21:49) and t07 (26:50) are both
+# "Rock Show" (broadcast and extended cut; TMDB lists 27 min), and t12 (22:53,
+# stereo) is a compilation whose excerpts come from several episodes. Runtimes
+# alone can't tell which 22-minute title is the odd one out.
+
+PARKS_ROUTES = {
+    "/3/tv/8592": "tv_8592",
+    "/3/tv/8592/episode_groups": "tv_8592_episode_groups",
+    "/3/tv/8592/season/1": "tv_8592_season_1",
+}
+
+
+def parks_disc(fake_rip: FakeRipBuilder) -> tuple[Path, ProbeFn]:
+    data = json.loads((FIXTURES / "real" / "parks_s1_d1.json").read_text())
+    return fake_rip({name: (info["probe"], info["size_bytes"]) for name, info in data.items()})
+
+
+def test_parks_left_over_title_makes_nothing_confident(
+    fake_rip: FakeRipBuilder, tmp_path: Path
+) -> None:
+    # Before the "left over" cap, t02-t04 and t06 were filed one episode early at 87%+.
+    rip_dir, probe = parks_disc(fake_rip)
+    run = run_plan(
+        PlanRequest(rip_dir=rip_dir, output_root=tmp_path / "lib", tmdb_id=8592, season=1),
+        scanner=lambda path: scan_directory(path, probe=probe),
+        client=FakeTMDB(PARKS_ROUTES).client(),
+    )
+    assert all(a.status is not AssignmentStatus.CONFIDENT for a in run.match.assignments)
+    assert any("left over" in n for n in run.match.notes)

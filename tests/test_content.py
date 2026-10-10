@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -468,6 +469,9 @@ def test_real_disc_without_hint_is_resolved_by_transcripts(
     # The wrong answer can't move t04 out of sequence; it just sends it to review.
     assert result["t04"] == ("s01e06", AssignmentStatus.NEEDS_REVIEW)
     assert run.match.start_position == 1
+    # Five files back the start, so only the odd one out was listened to again.
+    stems = [stem[-3:] for stem, _ in fake_transcribe]
+    assert stems.count("t04") == 2 and all(stems.count(t) == 1 for t in ("t00", "t03", "t06"))
 
 
 def test_two_titles_with_contradicting_transcripts_are_not_confident(
@@ -512,3 +516,262 @@ def test_agreement_needs_a_majority_when_the_start_is_inferred() -> None:
     assert any("contradict the inferred start" in r for r in inferred.reasons)
     # A start the user pinned (--disc / --disc-episodes) isn't in question.
     assert run("disc1")["t00"].confidence > ContentConfig().confident_threshold
+
+
+# --- second listen ------------------------------------------------------------
+
+
+def _overlaps(a: SliceSpec, b: SliceSpec) -> bool:
+    return a.start_seconds < b.start_seconds + b.duration_seconds and b.start_seconds < (
+        a.start_seconds + a.duration_seconds
+    )
+
+
+@pytest.mark.parametrize(("episodes", "minutes", "count"), [([3], 22, 2), ([1, 2], 44, 4)])
+def test_second_slices_cover_new_ground(episodes: list[int], minutes: float, count: int) -> None:
+    a = assignment("t00", episodes, 0.5, minutes)
+    first = content_mod._slices_for(a, 22 * 60)
+    second = content_mod._second_slices(a, 22 * 60, 150)
+    assert len(second) == count
+    assert not any(_overlaps(x, y) for x in first for y in second)
+    duration = minutes * 60
+    # Clear of the first minute (recaps) and the last minute (credits).
+    assert all(
+        s.start_seconds > 60 and s.start_seconds + s.duration_seconds < duration - 60
+        for s in second
+    )
+
+
+def test_prompt_says_whether_excerpts_share_an_episode() -> None:
+    two = transcript("x" * 200, "y" * 200)
+    assert "come from the same episode" in build_user_prompt(SEASON, two, 1320)
+    assert "two consecutive episodes" in build_user_prompt(SEASON, two, 2640, double=True)
+    assert "same episode" not in build_user_prompt(SEASON, transcript("x" * 200), 1320)
+
+
+@pytest.mark.parametrize(
+    ("episodes", "answers", "expected"),
+    [
+        ([3], [(3, 0.9)], True),
+        ([1, 2], [(1, 0.9), (None, 0.0)], True),
+        ([3], [(5, 0.9)], False),  # contradicts the match
+        ([3], [(3, 0.3)], False),  # nothing clear
+        ([], [(4, 0.95)], False),  # no match to back up
+    ],
+)
+def test_settled(
+    episodes: list[int], answers: list[tuple[int | None, float]], expected: bool
+) -> None:
+    ev = evidence_for(t00=answers).by_file[Path("/rip/t00.mkv")]
+    assert content_mod.settled(assignment("t00", episodes, 0.5), ev, ContentConfig()) is expected
+
+
+class TwoPassLLM:
+    """Answers by file stem; a prompt with more than one excerpt of a single
+    file gets the ``second`` answer (one per excerpt)."""
+
+    name = "fake/two-pass"
+
+    def __init__(self, first: dict[str, str], second: dict[str, str], confidence: float = 0.9):
+        self.first, self.second, self.confidence = first, second, confidence
+        self.prompts: list[str] = []
+
+    def complete_json(self, system: str, user: str, schema: dict[str, Any]) -> LLMResponse:
+        self.prompts.append(user)
+        stem = re.search(r"FILE (\S+) PART", user)
+        assert stem is not None
+        count = len(re.findall(r"^Excerpt \d+ ", user, flags=re.MULTILINE))
+        table = self.second if count > 1 else self.first
+        code = table[stem.group(1)]
+        text = json.dumps(
+            {
+                "excerpts": [
+                    {
+                        "excerpt": i + 1,
+                        "episode": code,
+                        "confidence": self.confidence,
+                        "reasoning": "plot",
+                    }
+                    for i in range(count)
+                ]
+            }
+        )
+        return LLMResponse(text=text, model="fake", input_tokens=1000, output_tokens=50)
+
+
+def _gathered(verifier: ContentVerifier, match: MatchResult) -> Evidence:
+    evidence = verifier.gather(match, SEASON, VerifyMode.ALL)
+    verifier.listen_again(match, SEASON, evidence)
+    return evidence
+
+
+def test_listen_again_only_for_unsettled_files(fake_transcribe: list[tuple[str, int]]) -> None:
+    match = MatchResult(assignments=(assignment("t00", [3], 0.5), assignment("t01", [4], 0.5)))
+    llm = TwoPassLLM({"t00": "s01e03", "t01": "s01e02"}, {"t01": "s01e04"})
+    evidence = _gathered(_verifier(llm), match)
+    # t00 agreed, so only t01 was transcribed again (two more slices) and re-asked.
+    assert fake_transcribe == [("t00", 1), ("t01", 1), ("t01", 2)]
+    assert "Excerpt 3" in llm.prompts[-1] and "same episode" in llm.prompts[-1]
+    t01 = evidence.by_file[Path("/rip/t01.mkv")]
+    assert [a.episode for a in t01.answers] == [EP[4]] * 3
+    assert [a.episode for a in t01.first_answers] == [EP[2]]
+    assert evidence.usage.files_relistened == 1 and evidence.usage.llm_calls == 3
+    assert "(1 listened to twice)" in evidence.usage.summary_line
+
+    out = applied(list(match.assignments), evidence)["t01"]
+    assert out.episodes == (EP[4],) and out.confidence > 0.85
+    assert any(r.startswith("first excerpt: excerpt 1 -> s01e02") for r in out.reasons)
+    assert any(r.startswith("listened again with more excerpts:") for r in out.reasons)
+
+
+def test_listen_again_can_be_turned_off_and_respects_the_cap(
+    fake_transcribe: list[tuple[str, int]],
+) -> None:
+    match = MatchResult(assignments=(assignment("t00", [3], 0.5), assignment("t01", [4], 0.5)))
+    wrong = {"t00": "s01e05", "t01": "s01e06"}
+    off = _gathered(_verifier(TwoPassLLM(wrong, wrong), second_listen=False), match)
+    assert off.usage.files_relistened == 0 and off.usage.llm_calls == 2
+
+    capped = _gathered(_verifier(TwoPassLLM(wrong, wrong), max_llm_calls=3), match)
+    assert capped.usage.files_relistened == 1 and capped.usage.llm_calls == 3
+    assert any("1 file(s) not listened to again" in n for n in capped.usage.notes)
+
+
+def test_second_listen_fixes_a_wrong_first_answer_end_to_end(
+    fake_rip: FakeRipBuilder, fake_transcribe: list[tuple[str, int]], tmp_path: Path
+) -> None:
+    # The t03 + t04 pair again: t04's middle excerpt fooled Claude into "e02".
+    # If more excerpts tell the truth, both files are identified.
+    data = json.loads((FIXTURES / "real" / "good_place_s1_d1.json").read_text())
+    subset = {n: i for n, i in data.items() if n.endswith(("_t03.mkv", "_t04.mkv"))}
+    rip_dir, probe = fake_rip({n: (i["probe"], i["size_bytes"]) for n, i in subset.items()})
+    llm = TwoPassLLM(
+        {"GOOD_PLACE_S1_D1_t03": "s01e05", "GOOD_PLACE_S1_D1_t04": "s01e02"},
+        {"GOOD_PLACE_S1_D1_t03": "s01e05", "GOOD_PLACE_S1_D1_t04": "s01e06"},
+    )
+    run = run_plan(
+        PlanRequest(
+            rip_dir=rip_dir,
+            output_root=tmp_path / "lib",
+            tmdb_id=66573,
+            season=1,
+            verify=VerifyMode.LOW,
+        ),
+        scanner=lambda path: scan_directory(path, probe=probe),
+        client=FakeTMDB(GOOD_PLACE_ROUTES).client(),
+        verifier=_verifier(llm),
+    )
+    # The wrong answer won the first alignment, so t03 looked like the odd one out;
+    # with the start contested, both files were listened to again.
+    assert [n for n, slices in fake_transcribe if slices == 2] == [
+        "GOOD_PLACE_S1_D1_t03",
+        "GOOD_PLACE_S1_D1_t04",
+    ]
+    result = {a.file.path.stem[-3:]: (a.episode_label, a.status) for a in run.match.assignments}
+    assert result == {
+        "t03": ("s01e05", AssignmentStatus.CONFIDENT),
+        "t04": ("s01e06", AssignmentStatus.CONFIDENT),
+    }
+
+
+def test_scattered_answers_mean_a_compilation() -> None:
+    # Parks and Recreation S1: a 23-minute stereo title whose excerpts named three episodes.
+    out = applied([assignment("t12", [], 0.0)], evidence_for(t12=[(1, 0.6), (2, 0.65), (4, 0.7)]))
+    assert out["t12"].episodes == () and out["t12"].confidence == 0.0
+    assert any("probably a compilation" in r for r in out["t12"].reasons)
+
+
+def test_clear_duplicate_suggests_another_cut() -> None:
+    # Parks and Recreation S1: broadcast and extended cuts of "Rock Show".
+    out = applied(
+        [assignment("t06", [], 0.0), assignment("t07", [6], 0.9, 27)],
+        evidence_for(t06=[(6, 0.97)], t07=[(6, 0.97)]),
+    )
+    assert any("t07.mkv has stronger evidence" in r for r in out["t06"].reasons)
+    # Only a second listen that still says "Rock Show" suggests a second cut.
+    ev = evidence_for(t06=[(6, 0.97), (6, 0.97), (6, 0.93)], t07=[(6, 0.97)])
+    first = ev.by_file[Path("/rip/t06.mkv")]
+    ev.by_file[Path("/rip/t06.mkv")] = replace(first, first_answers=first.answers[:1])
+    out = applied([assignment("t06", [], 0.0), assignment("t07", [6], 0.9, 27)], ev)
+    assert out["t06"].episodes == () and out["t07"].episodes == (EP[6],)
+    assert any("another cut of the same episode" in r for r in out["t06"].reasons)
+
+
+class ReplayLLM:
+    """Replays real answers by file stem: first listen, then (optionally) second."""
+
+    name = "fake/replay"
+
+    def __init__(
+        self,
+        first: dict[str, tuple[str, float]],
+        second: dict[str, list[tuple[str, float]]],
+    ) -> None:
+        self.first, self.second = first, second
+
+    def complete_json(self, system: str, user: str, schema: dict[str, Any]) -> LLMResponse:
+        stem = re.search(r"FILE (\S+) PART", user)
+        assert stem is not None
+        relisten = "Excerpt 2 " in user
+        items = self.second[stem.group(1)] if relisten else [self.first[stem.group(1)]]
+        text = json.dumps(
+            {
+                "excerpts": [
+                    {"excerpt": i + 1, "episode": code, "confidence": c, "reasoning": "plot"}
+                    for i, (code, c) in enumerate(items)
+                ]
+            }
+        )
+        return LLMResponse(text=text, model="fake", input_tokens=1000, output_tokens=50)
+
+
+def test_real_parks_disc_with_every_file_checked(
+    fake_rip: FakeRipBuilder, fake_transcribe: list[tuple[str, int]], tmp_path: Path
+) -> None:
+    # What Claude answered in the live run (verify all, no disc hint).
+    llm = ReplayLLM(
+        {
+            "C1_t00": ("s01e01", 0.92),
+            "C2_t01": ("s01e02", 0.95),
+            "C3_t02": ("s01e03", 0.97),
+            "D1_t03": ("s01e04", 0.90),
+            "D2_t04": ("s01e05", 0.97),
+            "E1_t06": ("s01e06", 0.97),
+            "E2_t07": ("s01e06", 0.97),
+            "G1_t12": ("s01e02", 0.95),
+        },
+        {
+            "E1_t06": [("s01e06", 0.97), ("s01e06", 0.97), ("s01e06", 0.93)],
+            "G1_t12": [("s01e01", 0.60), ("s01e02", 0.65), ("s01e04", 0.70)],
+        },
+    )
+    data = json.loads((FIXTURES / "real" / "parks_s1_d1.json").read_text())
+    rip_dir, probe = fake_rip({n: (i["probe"], i["size_bytes"]) for n, i in data.items()})
+    run = run_plan(
+        PlanRequest(
+            rip_dir=rip_dir,
+            output_root=tmp_path / "lib",
+            tmdb_id=8592,
+            season=1,
+            verify=VerifyMode.ALL,
+        ),
+        scanner=lambda path: scan_directory(path, probe=probe),
+        client=FakeTMDB(
+            {
+                "/3/tv/8592": "tv_8592",
+                "/3/tv/8592/episode_groups": "tv_8592_episode_groups",
+                "/3/tv/8592/season/1": "tv_8592_season_1",
+            }
+        ).client(),
+        verifier=_verifier(llm),
+    )
+    by_stem = {a.file.path.stem: a for a in run.match.assignments}
+    confident = AssignmentStatus.CONFIDENT
+    expected = {"C1_t00": 1, "C2_t01": 2, "C3_t02": 3, "D1_t03": 4, "D2_t04": 5, "E2_t07": 6}
+    for stem, number in expected.items():
+        a = by_stem[stem]
+        assert ([e.episode for e in a.episodes], a.status) == ([number], confident)
+    for stem, phrase in (("E1_t06", "another cut"), ("G1_t12", "compilation")):
+        assert by_stem[stem].status is AssignmentStatus.UNMATCHED
+        assert any(phrase in r for r in by_stem[stem].reasons)
+    assert sorted(n for n, slices in fake_transcribe if slices == 2) == ["E1_t06", "G1_t12"]

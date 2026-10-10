@@ -349,6 +349,17 @@ def match_heuristic(
         gap_reasons.append(
             f"range {disc_range[0]}-{disc_range[1]} has more episodes than matched files"
         )
+    # An episode-length title that didn't fit means the aligner chose which one to
+    # leave out; runtimes rarely justify that choice (e.g. a broadcast and an
+    # extended cut of one episode), so every match could be off by one.
+    dropped = [
+        item.file.path.name for item, span in zip(items, best.spans, strict=True) if not span
+    ]
+    if dropped and any(best.spans):
+        gap_reasons.append(
+            f"episode-length title(s) left over ({', '.join(dropped)}): which titles are "
+            "which episodes is uncertain (another cut of an episode, or an extra?)"
+        )
     notes.extend(gap_reasons)
 
     assignments: list[Assignment] = []

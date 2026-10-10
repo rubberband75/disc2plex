@@ -1,0 +1,51 @@
+{
+ "id": 8592,
+ "name": "Parks and Recreation",
+ "original_name": "Parks and Recreation",
+ "first_air_date": "2009-04-09",
+ "episode_run_time": [
+  22
+ ],
+ "seasons": [
+  {
+   "season_number": 0,
+   "name": "Specials",
+   "episode_count": 11
+  },
+  {
+   "season_number": 1,
+   "name": "Season 1",
+   "episode_count": 6
+  },
+  {
+   "season_number": 2,
+   "name": "Season 2",
+   "episode_count": 24
+  },
+  {
+   "season_number": 3,
+   "name": "Season 3",
+   "episode_count": 16
+  },
+  {
+   "season_number": 4,
+   "name": "Season 4",
+   "episode_count": 22
+  },
+  {
+   "season_number": 5,
+   "name": "Season 5",
+   "episode_count": 22
+  },
+  {
+   "season_number": 6,
+   "name": "Season 6",
+   "episode_count": 20
+  },
+  {
+   "season_number": 7,
+   "name": "Season 7",
+   "episode_count": 12
+  }
+ ]
+}

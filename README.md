@@ -81,6 +81,10 @@ DISC2PLEX_LLM_MODEL=llama3.1:8b disc2plex plan ./DISC --show ... --llm local
 disc2plex plan ./DISC --show ... --llm claude --verify all
 ```
 
+If a file's answer contradicts its match, or is unclear, it gets a second listen:
+two more excerpts are transcribed and the LLM is asked again with all of them. This
+usually fixes a misleading first excerpt; files that still conflict go to review.
+
 Transcripts are only sent to an API when you choose `--llm claude`. Whisper runs
 locally; the first run downloads the model (~480 MB for `small`). To see what
 Whisper hears: `disc2plex transcribe ./DISC -f DISC_t03.mkv`.
