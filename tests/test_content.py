@@ -454,3 +454,47 @@ def test_real_disc_without_hint_is_resolved_by_transcripts(
     # The wrong answer can't move t04 out of sequence; it just sends it to review.
     assert result["t04"] == ("s01e06", AssignmentStatus.NEEDS_REVIEW)
     assert run.match.start_position == 1
+
+
+def test_two_titles_with_contradicting_transcripts_are_not_confident(
+    fake_rip: FakeRipBuilder, fake_transcribe: list[tuple[str, int]], tmp_path: Path
+) -> None:
+    # Found by a real apply on copies of t03 + t04 only: t04's wrong "e02" answer
+    # pulled the inferred start to 1 and then "agreed" with it, at 91%.
+    data = json.loads((FIXTURES / "real" / "good_place_s1_d1.json").read_text())
+    subset = {n: i for n, i in data.items() if n.endswith(("_t03.mkv", "_t04.mkv"))}
+    rip_dir, probe = fake_rip({n: (i["probe"], i["size_bytes"]) for n, i in subset.items()})
+
+    def scanner(path: Path) -> ScanResult:
+        return scan_directory(path, probe=probe)
+
+    run = run_plan(
+        PlanRequest(
+            rip_dir=rip_dir,
+            output_root=tmp_path / "lib",
+            tmdb_id=66573,
+            season=1,
+            verify=VerifyMode.LOW,
+        ),
+        scanner=scanner,
+        client=FakeTMDB(GOOD_PLACE_ROUTES).client(),
+        verifier=_verifier(OracleLLM(REAL_ANSWERS)),
+    )
+    assert all(a.status is not AssignmentStatus.CONFIDENT for a in run.match.assignments)
+    assert any("disagree about where the disc starts" in n for n in run.match.notes)
+
+
+def test_agreement_needs_a_majority_when_the_start_is_inferred() -> None:
+    def run(start_source: str | None) -> dict[str, Assignment]:
+        match = MatchResult(
+            assignments=(assignment("t00", [1], 0.6), assignment("t01", [2], 0.6)),
+            start_source=start_source,
+        )
+        ev = evidence_for(t00=[(1, 0.9)], t01=[(5, 0.8)])
+        return {a.file.path.stem: a for a in apply_evidence(match, ev).assignments}
+
+    inferred = run("inferred")["t00"]
+    assert inferred.confidence == ContentConfig().review_cap
+    assert any("contradict the inferred start" in r for r in inferred.reasons)
+    # A start the user pinned (--disc / --disc-episodes) isn't in question.
+    assert run("disc1")["t00"].confidence > ContentConfig().confident_threshold

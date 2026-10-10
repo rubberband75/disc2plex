@@ -319,6 +319,18 @@ def apply_evidence(
     cfg = cfg or ContentConfig()
     heuristic_cfg = replace(HeuristicConfig(), runtime_scale=match.runtime_scale)
     original = list(match.assignments)
+    notes = [*match.notes, evidence.usage.summary_line, *evidence.usage.notes]
+    # With an inferred start, one file agreeing with its slot proves little if
+    # other files' transcripts contradict that start (a wrong answer can pull the
+    # start onto itself). Agreement then only counts with a clear majority.
+    agree, disagree = _agreement_counts(original, evidence, cfg)
+    start_unconfirmed = match.start_source == "inferred" and agree <= 2 * disagree
+    if start_unconfirmed and disagree:
+        notes.append(
+            f"transcripts disagree about where the disc starts ({agree} file(s) agree, "
+            f"{disagree} disagree); nothing is confident on content alone. Pass "
+            "--disc-episodes or --disc to pin the start"
+        )
     updated: list[Assignment] = []
     for a in original:
         problem = evidence.problems.get(a.file.path)
@@ -327,9 +339,27 @@ def apply_evidence(
             reasons = (*a.reasons, f"content: {problem}") if problem else a.reasons
             updated.append(a.model_copy(update={"reasons": reasons}))
             continue
-        updated.append(_combine_one(a, ev, original, evidence, heuristic_cfg, cfg))
-    notes = [*match.notes, evidence.usage.summary_line, *evidence.usage.notes]
+        updated.append(
+            _combine_one(a, ev, original, evidence, heuristic_cfg, cfg, start_unconfirmed)
+        )
     return match.model_copy(update={"assignments": tuple(updated), "notes": tuple(notes)})
+
+
+def _agreement_counts(
+    assignments: Sequence[Assignment], evidence: Evidence, cfg: ContentConfig
+) -> tuple[int, int]:
+    """Files whose useful transcript answers fit their assignment, and files whose don't."""
+    agree = disagree = 0
+    for a in assignments:
+        ev = evidence.by_file.get(a.file.path)
+        useful = ev.useful(cfg.min_answer_confidence) if ev else []
+        if not useful:
+            continue
+        if a.episodes and {answer.episode for answer in useful} <= set(a.episodes):
+            agree += 1
+        else:
+            disagree += 1
+    return agree, disagree
 
 
 def _combine_one(
@@ -339,6 +369,7 @@ def _combine_one(
     evidence: Evidence,
     heuristic_cfg: HeuristicConfig,
     cfg: ContentConfig,
+    start_unconfirmed: bool = False,
 ) -> Assignment:
     reasons = [*a.reasons, _describe(ev.answers)]
     signals = dict(a.signals)
@@ -360,13 +391,22 @@ def _combine_one(
     def update(**changes: object) -> Assignment:
         return a.model_copy(update={"reasons": tuple(reasons), "signals": signals, **changes})
 
+    def boosted(weight: float) -> Assignment:
+        confidence = 1 - (1 - h) * (1 - weight * content_conf)
+        if start_unconfirmed:
+            # Keep what order/runtime earned on its own, but don't boost past review.
+            capped = max(h, min(confidence, cfg.review_cap))
+            if capped < confidence:
+                reasons.append("other transcripts contradict the inferred start; not boosted")
+            confidence = capped
+        return update(confidence=round(confidence, 3))
+
     if a.episodes and set(content_eps) == set(a.episodes):
         reasons.append("content agrees with the order/runtime match")
-        return update(confidence=round(1 - (1 - h) * (1 - cfg.agree_weight * content_conf), 3))
+        return boosted(cfg.agree_weight)
     if a.episodes and set(content_eps) < set(a.episodes):
         reasons.append("content partly agrees (identified some of the matched episodes)")
-        boost = cfg.partial_agree_weight * content_conf
-        return update(confidence=round(1 - (1 - h) * (1 - boost), 3))
+        return boosted(cfg.partial_agree_weight)
 
     new_eps = sorted(content_eps, key=lambda e: (e.season, e.episode))
     label = ", ".join(episode_code(e) for e in new_eps)
