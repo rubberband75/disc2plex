@@ -212,6 +212,8 @@ class MatchResult(_Frozen):
     # 1-based position (in the chosen order) of the first episode on the disc.
     start_position: int | None = None
     start_source: str | None = None  # "range", "disc1", "inferred"
+    # Per-disc multiplier applied to TMDB runtimes (see heuristic calibration).
+    runtime_scale: float = 1.0
     notes: tuple[str, ...] = ()
 
 

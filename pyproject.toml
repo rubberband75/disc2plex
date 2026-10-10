@@ -5,6 +5,7 @@ description = "Identify, rename, and organize MakeMKV TV-series rips into a Plex
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "anthropic>=1.13.0",
     "faster-whisper>=1.2.1",
     "httpx>=0.28.1",
     "numpy>=2.4.6",

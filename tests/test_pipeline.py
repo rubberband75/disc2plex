@@ -369,3 +369,43 @@ def test_cli_undo_bad_manifest(tmp_path: Path) -> None:
     result = runner.invoke(cli.app, ["undo", str(bad), "--yes"])
     assert result.exit_code == 1
     assert "cannot read manifest" in result.output
+
+
+# --- CLI content-verification options -----------------------------------------
+
+
+def test_cli_plan_notes_when_verification_is_off(cli_disc: Path, tmp_path: Path) -> None:
+    result = runner.invoke(
+        cli.app, ["plan", str(cli_disc), "--show", "Firefly", "--output", str(tmp_path)]
+    )
+    assert "content verification is off" in result.output
+
+
+def test_cli_plan_verify_none_is_silent(cli_disc: Path, tmp_path: Path) -> None:
+    result = runner.invoke(
+        cli.app,
+        ["plan", str(cli_disc), "--show", "Firefly", "--output", str(tmp_path), "--verify", "none"],
+    )
+    assert "content verification" not in result.output
+
+
+def test_cli_plan_local_llm_requires_model(
+    cli_disc: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("DISC2PLEX_LLM_MODEL", raising=False)
+    result = runner.invoke(
+        cli.app,
+        ["plan", str(cli_disc), "--show", "Firefly", "--output", str(tmp_path), "--llm", "local"],
+    )
+    assert result.exit_code == 1
+    assert "model name is required" in result.output
+
+
+def test_cli_plan_rejects_bad_whisper_model(cli_disc: Path, tmp_path: Path) -> None:
+    result = runner.invoke(
+        cli.app,
+        ["plan", str(cli_disc), "--show", "Firefly", "--output", str(tmp_path),
+         "--llm", "claude", "--whisper-model", "enormous"],
+    )  # fmt: skip
+    assert result.exit_code == 1
+    assert "--whisper-model" in result.output

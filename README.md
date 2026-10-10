@@ -22,9 +22,22 @@ uv run disc2plex --help
 
 ## Usage
 
-All commands work. Matching uses title order and runtimes. Local Whisper
-transcription works (`transcribe`); using transcripts to verify matches is next.
-The first transcription downloads the Whisper model (~480 MB for `small`).
+All commands work. Matching uses title order and runtimes, and can be verified
+from what is actually said in each episode: local Whisper transcribes a few
+minutes of audio and an LLM (Claude, or a local OpenAI-compatible server such as
+Ollama) picks the matching TMDB synopsis. The first transcription downloads the
+Whisper model (~480 MB for `small`).
+
+```bash
+# Verify uncertain matches with Claude (needs ANTHROPIC_API_KEY in .env)
+disc2plex plan ./GOOD_PLACE_S1_D1 --show "The Good Place" --season 1 \
+    --output "/srv/plex/TV Shows" --llm claude
+# ...or with a local model
+DISC2PLEX_LLM_MODEL=llama3.1:8b disc2plex plan ... --llm local
+```
+
+Transcripts are only sent to an API when you pass `--llm claude`. Answers are
+cached, so running `plan` and then `apply` costs one set of calls.
 
 ```bash
 disc2plex scan ./sample_rip

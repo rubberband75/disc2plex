@@ -31,6 +31,10 @@ from disc2plex.apply import (
 )
 from disc2plex.classify import classify
 from disc2plex.config import load_dotenv
+from disc2plex.llm.base import CachedLLM, LLMBackend, LLMError, default_llm_cache_dir
+from disc2plex.llm.claude import ClaudeBackend
+from disc2plex.llm.openai_compat import DEFAULT_BASE_URL, OpenAICompatBackend
+from disc2plex.match.content import ContentVerifier, VerifyMode
 from disc2plex.models import (
     EntryStatus,
     FileClass,
@@ -79,12 +83,6 @@ tmdb_app = typer.Typer(help="TMDB helper commands.", no_args_is_help=True)
 app.add_typer(tmdb_app, name="tmdb")
 
 
-class VerifyMode(StrEnum):
-    NONE = "none"
-    LOW = "low"
-    ALL = "all"
-
-
 class LLMChoice(StrEnum):
     CLAUDE = "claude"
     LOCAL = "local"
@@ -123,7 +121,19 @@ OutputOpt = Annotated[Path | None, typer.Option("--output", help="Plex TV librar
 VerifyOpt = Annotated[
     VerifyMode, typer.Option("--verify", help="When to run content verification.")
 ]
-LLMOpt = Annotated[LLMChoice, typer.Option("--llm", help="LLM backend for content matching.")]
+LLMOpt = Annotated[
+    LLMChoice,
+    typer.Option(
+        "--llm", help="LLM for content verification (claude sends transcripts to the API)."
+    ),
+]
+LLMModelOpt = Annotated[
+    str | None,
+    typer.Option(
+        "--llm-model",
+        help="Model name (default: claude-opus-5-5 for claude; DISC2PLEX_LLM_MODEL for local).",
+    ),
+]
 WhisperOpt = Annotated[str, typer.Option("--whisper-model", help="faster-whisper model size.")]
 LangOpt = Annotated[str, typer.Option("--lang", help="Preferred audio language.")]
 ActionOpt = Annotated[FileAction, typer.Option("--action", help="How to place files.")]
@@ -229,6 +239,7 @@ def _plan_request(
     action: FileAction,
     include_titles: bool,
     extras: ExtrasMode,
+    verify: VerifyMode,
 ) -> PlanRequest:
     if output is None:
         raise _fail("--output is required (your Plex TV library root)")
@@ -248,6 +259,7 @@ def _plan_request(
         disc=disc,
         disc_range=disc_range,
         order=order,
+        verify=verify,
         options=PlanOptions(
             action=PlanAction(action.value), include_titles=include_titles, extras=extras
         ),
@@ -270,7 +282,55 @@ def _prompt_for_show(candidates: Sequence[ShowSummary]) -> int:
         console.print(f"Enter a number from 1 to {len(candidates)}.")
 
 
-def _run_pipeline(request: PlanRequest, *, interactive: bool) -> PlanRun:
+def _make_llm(llm: LLMChoice, model: str | None) -> LLMBackend:
+    if llm is LLMChoice.CLAUDE:
+        return ClaudeBackend(model) if model else ClaudeBackend()
+    return OpenAICompatBackend(
+        model or os.environ.get("DISC2PLEX_LLM_MODEL", ""),
+        base_url=os.environ.get("DISC2PLEX_LLM_BASE_URL", DEFAULT_BASE_URL),
+        api_key=os.environ.get("DISC2PLEX_LLM_API_KEY"),
+    )
+
+
+def _build_verifier(
+    verify: VerifyMode,
+    llm: LLMChoice,
+    llm_model: str | None,
+    whisper_model: str,
+    lang: str,
+    *,
+    quiet: bool,
+) -> ContentVerifier | None:
+    """Assemble transcription + LLM for content verification, or None if not requested."""
+    if verify is VerifyMode.NONE:
+        return None
+    if llm is LLMChoice.NONE:
+        if not quiet:
+            typer.secho(
+                "Note: content verification is off (pass --llm claude or --llm local); "
+                "matching uses title order and runtimes only.",
+                err=True,
+                dim=True,
+            )
+        return None
+    if whisper_model not in WHISPER_MODELS:
+        raise _fail(f"--whisper-model must be one of {', '.join(WHISPER_MODELS)}")
+    load_dotenv()  # ANTHROPIC_API_KEY / HF_TOKEN / DISC2PLEX_LLM_* may live in .env
+    try:
+        backend = _make_llm(llm, llm_model)
+    except LLMError as exc:
+        raise _fail(str(exc)) from exc
+    return ContentVerifier(
+        transcriber=FasterWhisperTranscriber(whisper_model),
+        llm=CachedLLM(backend, default_llm_cache_dir()),
+        lang=lang,
+        transcript_cache=TranscriptCache(default_transcript_cache_dir()),
+    )
+
+
+def _run_pipeline(
+    request: PlanRequest, *, interactive: bool, verifier: ContentVerifier | None = None
+) -> PlanRun:
     cache = ProbeCache(default_cache_path())
 
     def scanner(rip_dir: Path) -> ScanResult:
@@ -278,12 +338,16 @@ def _run_pipeline(request: PlanRequest, *, interactive: bool) -> PlanRun:
 
     with tmdb_session() as client:
         try:
-            return run_plan(request, scanner=scanner, client=client, exists=Path.exists)
+            return run_plan(
+                request, scanner=scanner, client=client, exists=Path.exists, verifier=verifier
+            )
         except AmbiguousShowError as exc:
             if not interactive:
                 raise
             chosen = replace(request, tmdb_id=_prompt_for_show(exc.candidates))
-            return run_plan(chosen, scanner=scanner, client=client, exists=Path.exists)
+            return run_plan(
+                chosen, scanner=scanner, client=client, exists=Path.exists, verifier=verifier
+            )
         except ValueError as exc:  # e.g. --disc-episodes outside the season
             raise _fail(str(exc)) from exc
 
@@ -301,6 +365,7 @@ def plan(
     output: OutputOpt = None,
     verify: VerifyOpt = VerifyMode.LOW,
     llm: LLMOpt = LLMChoice.NONE,
+    llm_model: LLMModelOpt = None,
     whisper_model: WhisperOpt = "small",
     lang: LangOpt = "en",
     action: ActionOpt = FileAction.MOVE,
@@ -313,17 +378,11 @@ def plan(
     require_ffprobe()
     request = _plan_request(
         rip_dir, output, show, year, tmdb_id, season, disc, disc_episodes, order,
-        action, include_titles, extras,
+        action, include_titles, extras, verify,
     )  # fmt: skip
-    if verify is not VerifyMode.NONE and not json_out:
-        typer.secho(
-            "Note: content verification isn't available yet; matching uses title order "
-            "and runtimes only.",
-            err=True,
-            dim=True,
-        )
+    verifier = _build_verifier(verify, llm, llm_model, whisper_model, lang, quiet=json_out)
     interactive = not yes and not json_out and _stdin_is_terminal()
-    run = _run_pipeline(request, interactive=interactive)
+    run = _run_pipeline(request, interactive=interactive, verifier=verifier)
     if json_out:
         typer.echo(plan_to_json(run))
     else:
@@ -345,6 +404,7 @@ def apply(
     output: OutputOpt = None,
     verify: VerifyOpt = VerifyMode.LOW,
     llm: LLMOpt = LLMChoice.NONE,
+    llm_model: LLMModelOpt = None,
     whisper_model: WhisperOpt = "small",
     lang: LangOpt = "en",
     action: ActionOpt = FileAction.MOVE,
@@ -360,10 +420,13 @@ def apply(
     require_ffprobe()
     request = _plan_request(
         rip_dir, output, show, year, tmdb_id, season, disc, disc_episodes, order,
-        action, include_titles, extras,
+        action, include_titles, extras, verify,
     )  # fmt: skip
+    verifier = _build_verifier(verify, llm, llm_model, whisper_model, lang, quiet=json_out)
     terminal = _stdin_is_terminal()
-    run = _run_pipeline(request, interactive=not yes and not json_out and terminal)
+    run = _run_pipeline(
+        request, interactive=not yes and not json_out and terminal, verifier=verifier
+    )
     console = Console()
     if json_out:
         typer.echo(plan_to_json(run))

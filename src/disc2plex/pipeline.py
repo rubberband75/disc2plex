@@ -13,7 +13,8 @@ from pathlib import Path
 
 from disc2plex.classify import classify
 from disc2plex.match.combine import Thresholds, decide
-from disc2plex.match.heuristic import match_heuristic
+from disc2plex.match.content import ContentVerifier, VerifyMode, apply_evidence
+from disc2plex.match.heuristic import ContentVotes, match_heuristic
 from disc2plex.models import ClassifyResult, MatchResult, Plan, ScanResult, SeasonEpisodes, ShowInfo
 from disc2plex.plan import PlanOptions, build_plan
 from disc2plex.tmdb import (
@@ -62,6 +63,7 @@ class PlanRequest:
     disc: int | None = None
     disc_range: tuple[int, int] | None = None
     order: str = "aired"
+    verify: VerifyMode = VerifyMode.NONE
     options: PlanOptions = field(default_factory=PlanOptions)
     thresholds: Thresholds = field(default_factory=Thresholds)
 
@@ -84,8 +86,13 @@ def run_plan(
     scanner: Callable[[Path], ScanResult],
     client: TMDBClient,
     exists: Callable[[Path], bool] = lambda _p: False,
+    verifier: ContentVerifier | None = None,
 ) -> PlanRun:
-    """Run every stage up to (not including) applying the plan."""
+    """Run every stage up to (not including) applying the plan.
+
+    Content verification runs only when a ``verifier`` is given and
+    ``request.verify`` isn't ``none``.
+    """
     show = resolve_show(client, name=request.show_name, year=request.year, tmdb_id=request.tmdb_id)
     season_number = request.season if request.season is not None else infer_season(show)
     season = season_episodes(client, show, season_number, request.order)
@@ -96,15 +103,23 @@ def run_plan(
         expected_runtime_seconds=expected_runtime_seconds(season),
         season_runtimes_seconds=season_runtimes_seconds(season),
     )
-    matched = decide(
-        match_heuristic(
+
+    def align(votes: ContentVotes | None = None) -> MatchResult:
+        return match_heuristic(
             classified.items,
             season,
             disc_range=request.disc_range,
             disc_number=request.disc,
-        ),
-        request.thresholds,
-    )
+            content_votes=votes,
+        )
+
+    heuristic = align()
+    if verifier is not None and request.verify is not VerifyMode.NONE:
+        evidence = verifier.gather(heuristic, season, request.verify)
+        if evidence.by_file:
+            heuristic = align(evidence.votes(verifier.config.min_answer_confidence))
+        heuristic = apply_evidence(heuristic, evidence, verifier.config)
+    matched = decide(heuristic, request.thresholds)
     plan = build_plan(
         matched,
         show,

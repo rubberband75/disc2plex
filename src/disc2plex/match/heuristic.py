@@ -17,8 +17,9 @@ from __future__ import annotations
 
 import math
 import statistics
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from pathlib import Path
 
 from disc2plex.models import (
     Assignment,
@@ -60,7 +61,13 @@ class HeuristicConfig:
     runtime_scale: float = 1.0
     min_runtime_scale: float = 0.80
     max_runtime_scale: float = 1.35
+    # Weight of transcript evidence in pair scores (< 1: LLM confidence is not
+    # calibrated, so one confident-but-wrong answer can't outvote order + runtime).
+    content_weight: float = 0.6
 
+
+# Transcript evidence per file: ((season, episode), confidence) per answered excerpt.
+ContentVotes = Mapping[Path, Sequence[tuple[tuple[int, int], float]]]
 
 # Runtime fit below this (about 17% off with the default sigma) is called a mismatch.
 MISMATCH_FIT = 0.3
@@ -90,14 +97,42 @@ def runtime_fit(
     return math.exp(-((relative_error / cfg.runtime_sigma) ** 2))
 
 
+def content_score(
+    votes: Sequence[tuple[tuple[int, int], float]],
+    episodes: Sequence[EpisodeInfo],
+    candidate_count: int,
+    cfg: HeuristicConfig,
+) -> float:
+    """Log-likelihood ratio of the transcript answers if the file holds ``episodes``.
+
+    Each answer "excerpt is episode X with confidence c" is treated as: true
+    episode answered with probability c, otherwise one of the other N-1 at
+    random; scored against a uniform 1/N baseline and averaged over excerpts.
+    A matching answer adds ~log(cN), a contradicting one subtracts.
+    """
+    if not votes or candidate_count < 2:
+        return 0.0
+    keys = {(e.season, e.episode) for e in episodes}
+    n = candidate_count
+    total = 0.0
+    for key, confidence in votes:
+        c = min(max(confidence, 0.05), 0.95)
+        total += math.log(c * n) if key in keys else math.log((1 - c) * n / (n - 1))
+    return cfg.content_weight * total / len(votes)
+
+
 def _pair_score(
-    item: Classification, episodes: Sequence[EpisodeInfo], cfg: HeuristicConfig
+    item: Classification,
+    episodes: Sequence[EpisodeInfo],
+    cfg: HeuristicConfig,
+    votes: Sequence[tuple[tuple[int, int], float]] = (),
+    candidate_count: int = 0,
 ) -> float:
     fit = runtime_fit(item.file.duration_seconds, episodes, cfg)
     if fit is None:
         # No runtimes: trust classification's guess of how many episodes it holds.
         fit = cfg.unknown_runtime_fit if len(episodes) == item.episode_count_hint else 0.25
-    return math.log(max(fit, 1e-6))
+    return math.log(max(fit, 1e-6)) + content_score(votes, episodes, candidate_count, cfg)
 
 
 def _align(
@@ -106,6 +141,7 @@ def _align(
     start: int,
     end: int,
     cfg: HeuristicConfig,
+    votes: ContentVotes | None = None,
 ) -> _Path:
     """Best alignment of ``items`` onto episode positions ``start..end-1`` (0-based)."""
     m = len(items)
@@ -114,6 +150,9 @@ def _align(
     best = [[neg] * (end + 1) for _ in range(m + 1)]
     back: list[list[tuple[str, int, int] | None]] = [[None] * (end + 1) for _ in range(m + 1)]
     best[0][start] = 0.0
+
+    def evidence(item: Classification) -> tuple[Sequence[tuple[tuple[int, int], float]], int]:
+        return (votes or {}).get(item.file.path, ()), len(episodes)
 
     def relax(i: int, j: int, score: float, move: str, pi: int, pj: int) -> None:
         if score > best[i][j]:
@@ -132,10 +171,13 @@ def _align(
             item = items[i]
             relax(i + 1, j, score + cfg.drop_penalty, "drop", i, j)
             if j < end:
-                one = _pair_score(item, episodes[j : j + 1], cfg)
+                one = _pair_score(item, episodes[j : j + 1], cfg, *evidence(item))
                 relax(i + 1, j + 1, score + one, "one", i, j)
             if j + 1 < end and item.episode_count_hint >= 2:
-                two = _pair_score(item, episodes[j : j + 2], cfg) + cfg.double_penalty
+                two = (
+                    _pair_score(item, episodes[j : j + 2], cfg, *evidence(item))
+                    + cfg.double_penalty
+                )
                 relax(i + 1, j + 2, score + two, "two", i, j)
 
     # Trailing unused episodes are free (the disc may stop before the season ends).
@@ -217,12 +259,15 @@ def match_heuristic(
     disc_range: tuple[int, int] | None = None,
     disc_number: int | None = None,
     config: HeuristicConfig | None = None,
+    content_votes: ContentVotes | None = None,
 ) -> MatchResult:
     """Assign EPISODE-class files to episodes of ``season``.
 
     ``disc_range`` is an inclusive 1-based range of positions in the season's
     chosen order (for aired order these are the episode numbers). Non-episode
     files are passed through unassigned; statuses are set later by ``combine``.
+    ``content_votes`` (from transcript verification) adds evidence to each
+    pairing's score, which can also pin down an otherwise ambiguous start.
     """
     cfg = config or HeuristicConfig()
     episodes = list(season.episodes)
@@ -267,7 +312,7 @@ def match_heuristic(
             f"this disc's episodes run {scale:.2f}x TMDB's listed runtimes; "
             "runtimes were scaled before comparing"
         )
-    paths = {s: _align(items, episodes, s, end, cfg) for s in starts}
+    paths = {s: _align(items, episodes, s, end, cfg, content_votes) for s in starts}
     best_start = max(paths, key=lambda s: paths[s].score)
     best = paths[best_start]
 
@@ -283,7 +328,8 @@ def match_heuristic(
         margin = best.score - max(others) if others else math.inf
         order_conf = _order_confidence(margin, cfg)
         start_text = (
-            f"start inferred from runtimes (margin {margin:.1f} over next-best start)"
+            f"start inferred from {'runtimes and transcripts' if content_votes else 'runtimes'} "
+            f"(margin {margin:.1f} over next-best start)"
             if math.isfinite(margin)
             else "only one possible start"
         )
@@ -349,5 +395,6 @@ def match_heuristic(
         assignments=tuple(assignments + passthrough),
         start_position=best_start + 1,
         start_source=source,
+        runtime_scale=round(scale, 4),
         notes=tuple(notes),
     )
