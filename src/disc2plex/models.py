@@ -68,6 +68,32 @@ class MediaFile(_Frozen):
         return len(self.chapter_starts)
 
 
+class Classification(_Frozen):
+    """Stage 2 verdict for one file, with the evidence behind it."""
+
+    file: MediaFile
+    file_class: FileClass
+    reasons: tuple[str, ...] = ()
+    # Duration relative to the reference episode length, when one is known.
+    length_ratio: float | None = None
+    # Probable episode count for EPISODE files: 2 for a double-length title.
+    episode_count_hint: int = 1
+    # For PLAY_ALL (or a suspected one): the titles it appears to concatenate.
+    play_all_of: tuple[Path, ...] = ()
+    duplicate_of: Path | None = None
+
+
+class ClassifyResult(_Frozen):
+    items: tuple[Classification, ...] = ()
+    # Typical single-episode length used for classification, if determinable.
+    reference_seconds: float | None = None
+    reference_source: str | None = None  # "cluster", "expected", or None
+    notes: tuple[str, ...] = ()
+
+    def by_class(self, file_class: FileClass) -> tuple[Classification, ...]:
+        return tuple(item for item in self.items if item.file_class is file_class)
+
+
 class ScanFailure(_Frozen):
     """A file that could not be probed (corrupt, truncated, not really video...)."""
 

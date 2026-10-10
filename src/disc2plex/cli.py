@@ -16,6 +16,7 @@ import typer
 from rich.console import Console
 
 from disc2plex import __version__
+from disc2plex.classify import classify
 from disc2plex.report import render_scan, scan_to_json
 from disc2plex.scan import ProbeCache, default_cache_path, scan_directory
 
@@ -146,15 +147,25 @@ def scan(
     no_cache: Annotated[
         bool, typer.Option("--no-cache", help="Re-probe every file, ignoring the cache.")
     ] = False,
+    episode_length: Annotated[
+        float | None,
+        typer.Option(
+            "--episode-length",
+            min=1,
+            help="Expected episode runtime in minutes (helps on discs with few episodes).",
+        ),
+    ] = None,
 ) -> None:
     """Show probed files and their classification."""
     require_ffprobe()
     cache = None if no_cache else ProbeCache(default_cache_path())
     result = scan_directory(rip_dir, recursive=recursive, cache=cache)
+    expected = episode_length * 60 if episode_length else None
+    classified = classify(result.files, expected_runtime_seconds=expected)
     if json_out:
-        typer.echo(scan_to_json(result))
+        typer.echo(scan_to_json(result, classified))
     else:
-        render_scan(result, Console())
+        render_scan(result, classified, Console())
 
 
 @app.command()

@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from disc2plex.scan import ProbeData, ProbeError, ProbeFn
+from disc2plex.models import AudioTrack, MediaFile
+from disc2plex.scan import ProbeData, ProbeError, ProbeFn, parse_title_index
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -45,6 +46,33 @@ def synthetic_probe(
         "chapters": [{"start_time": str(start)} for start in (chapters or [])],
         "format": {"duration": str(duration)},
     }
+
+
+def make_media(
+    name: str,
+    minutes: float,
+    *,
+    size: int | None = None,
+    chapters: Sequence[float] = (),
+    audio: bool = True,
+) -> MediaFile:
+    """Build a MediaFile directly (no probing). ``chapters`` are start times in minutes.
+
+    Default size is ~8 Mbit/s DVD bitrate plus a per-name offset so two files of
+    equal length are not accidentally byte-identical "duplicates".
+    """
+    seconds = minutes * 60
+    default_size = int(seconds * 1_000_000) + sum(name.encode()) * 1_000
+    return MediaFile(
+        path=Path("/rip") / name,
+        size_bytes=default_size if size is None else size,
+        duration_seconds=seconds,
+        audio_tracks=(AudioTrack(index=1, codec="ac3", language="eng", channels=2),)
+        if audio
+        else (),
+        chapter_starts=tuple(c * 60 for c in chapters),
+        makemkv_title_index=parse_title_index(Path(name)),
+    )
 
 
 # A spec is a fixture name, a ready-made probe dict, or an exception to raise.

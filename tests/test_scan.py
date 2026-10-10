@@ -308,9 +308,20 @@ def test_scan_command_json(cli_with_fake_probe: Path) -> None:
     result = runner.invoke(cli.app, ["scan", str(cli_with_fake_probe), "--json", "--no-cache"])
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
-    assert data["files"][0]["makemkv_title_index"] == 0
-    assert data["files"][0]["duration_seconds"] == pytest.approx(2580.123)
+    assert data["items"][0]["file"]["makemkv_title_index"] == 0
+    assert data["items"][0]["file"]["duration_seconds"] == pytest.approx(2580.123)
+    assert data["items"][0]["file_class"] == "unknown"  # lone title, no expected length
     assert data["failures"][0]["error"] == "corrupt file"
+
+
+def test_scan_command_uses_episode_length(cli_with_fake_probe: Path) -> None:
+    result = runner.invoke(
+        cli.app, ["scan", str(cli_with_fake_probe), "--json", "--episode-length", "44"]
+    )
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["reference_source"] == "expected"
+    assert data["items"][0]["file_class"] == "episode"
 
 
 def test_scan_command_writes_cache_under_xdg(cli_with_fake_probe: Path, tmp_path: Path) -> None:
