@@ -27,6 +27,7 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 
 from disc2plex.llm.base import LLMBackend, LLMError
+from disc2plex.match.combine import ASSIGNED_SIGNAL
 from disc2plex.match.heuristic import MISMATCH_FIT, ContentVotes, HeuristicConfig, runtime_fit
 from disc2plex.models import (
     Assignment,
@@ -319,7 +320,9 @@ def apply_evidence(
     cfg = cfg or ContentConfig()
     heuristic_cfg = replace(HeuristicConfig(), runtime_scale=match.runtime_scale)
     original = list(match.assignments)
-    notes = [*match.notes, evidence.usage.summary_line, *evidence.usage.notes]
+    usage = evidence.usage
+    did_work = usage.files_checked or usage.llm_calls or evidence.problems
+    notes = [*match.notes, *([usage.summary_line] if did_work else []), *usage.notes]
     # With an inferred start, one file agreeing with its slot proves little if
     # other files' transcripts contradict that start (a wrong answer can pull the
     # start onto itself). Agreement then only counts with a clear majority.
@@ -474,13 +477,16 @@ class ContentVerifier:
         """Assignments worth verifying.
 
         ``low``: episodes below the confident threshold; ``all``: every episode.
-        Both include UNKNOWN titles of plausible episode length (0.5-2.6x typical).
+        Both include UNKNOWN titles of plausible episode length (0.5-2.6x typical),
+        and skip files the user assigned with ``--assign``.
         """
         if mode is VerifyMode.NONE:
             return []
         typical = _typical_single_seconds(match)
         chosen = []
         for a in match.assignments:
+            if ASSIGNED_SIGNAL in a.signals:
+                continue
             wanted_episode = a.file_class is FileClass.EPISODE and (
                 mode is VerifyMode.ALL or a.confidence < self.config.confident_threshold
             )

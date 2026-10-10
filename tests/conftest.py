@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import zlib
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
@@ -16,6 +17,31 @@ from disc2plex.scan import ProbeData, ProbeError, ProbeFn, parse_title_index
 from disc2plex.tmdb import TMDBCache, TMDBClient
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+_USER_SETTINGS_VARS = (
+    "DISC2PLEX_CONFIG",
+    "DISC2PLEX_LLM_MODEL",
+    "DISC2PLEX_LLM_BASE_URL",
+    "DISC2PLEX_LLM_API_KEY",
+    "PLEX_URL",
+    "PLEX_TOKEN",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_user_dirs(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep every test away from the user's real config, caches, and manifests."""
+    # Whisper models stay in the real Hugging Face cache (the opt-in real test needs them).
+    monkeypatch.setenv(
+        "HF_HOME", os.environ.get("HF_HOME") or str(Path.home() / ".cache" / "huggingface")
+    )
+    base = tmp_path_factory.mktemp("xdg")
+    for var in ("XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME"):
+        monkeypatch.setenv(var, str(base / var.lower()))
+    for var in _USER_SETTINGS_VARS:
+        monkeypatch.delenv(var, raising=False)
 
 
 def load_probe_fixture(name: str) -> ProbeData:
@@ -155,7 +181,10 @@ def fake_rip(tmp_path: Path) -> FakeRipBuilder:
                 handle.truncate(size)
 
         def probe(path: Path) -> ProbeData:
-            source = sources[path.relative_to(rip_dir).as_posix()]
+            # Files moved elsewhere (e.g. into a review folder) are found by name.
+            inside = path.is_relative_to(rip_dir)
+            key = path.relative_to(rip_dir).as_posix() if inside else path.name
+            source = sources[key]
             if isinstance(source, ProbeError):
                 raise source
             data = _probe_data(source)

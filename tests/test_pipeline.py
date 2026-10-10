@@ -14,7 +14,13 @@ from typer.testing import CliRunner
 from conftest import FAKE_TOKEN, FakeRipBuilder, FakeTMDB, synthetic_probe
 from disc2plex import cli
 from disc2plex.models import AssignmentStatus, PlanAction, ScanResult
-from disc2plex.pipeline import PlanRequest, infer_season, parse_disc_range, run_plan
+from disc2plex.pipeline import (
+    PlanRequest,
+    infer_season,
+    parse_assign,
+    parse_disc_range,
+    run_plan,
+)
 from disc2plex.scan import ProbeFn, scan_directory
 from disc2plex.tmdb import AmbiguousShowError, TMDBClient, TMDBError
 
@@ -409,3 +415,271 @@ def test_cli_plan_rejects_bad_whisper_model(cli_disc: Path, tmp_path: Path) -> N
     )  # fmt: skip
     assert result.exit_code == 1
     assert "--whisper-model" in result.output
+
+
+# --- --assign (user overrides) ---------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("t04=6", ("t04", (6,))),
+        ("t00=1-2", ("t00", (1, 2))),
+        ("t00=e01-e02", ("t00", (1, 2))),
+        ("My = Show_t01.mkv=3", ("My = Show_t01.mkv", (3,))),
+    ],
+)
+def test_parse_assign(text: str, expected: tuple[str, tuple[int, ...]]) -> None:
+    assert parse_assign(text) == expected
+
+
+@pytest.mark.parametrize("text", ["t04", "=6", "t04=", "t04=x", "t04=3-1"])
+def test_parse_assign_rejects(text: str) -> None:
+    with pytest.raises(ValueError):
+        parse_assign(text)
+
+
+def _run_with(
+    fake_rip: FakeRipBuilder, fake: FakeTMDB, tmp_path: Path, *assign: str
+) -> dict[str, tuple[str, AssignmentStatus]]:
+    rip_dir, probe = firefly_disc1(fake_rip)
+    run = run_plan(
+        PlanRequest(
+            rip_dir=rip_dir, output_root=tmp_path / "lib", tmdb_id=1437, disc=1, order="dvd",
+            assign=tuple(parse_assign(a) for a in assign),
+        ),
+        scanner=scanner_for(probe),
+        client=fake.client(),
+    )  # fmt: skip
+    return {a.file.path.stem[-3:]: (a.episode_label, a.status) for a in run.match.assignments}
+
+
+def test_assign_overrides_and_demotes_the_other_claimant(
+    fake_rip: FakeRipBuilder, fake: FakeTMDB, tmp_path: Path
+) -> None:
+    # Normally t04 -> e06 (Shindig). Say t03 is e06 instead.
+    result = _run_with(fake_rip, fake, tmp_path, "t03=6")
+    assert result["t03"] == ("s01e06", AssignmentStatus.CONFIDENT)
+    assert result["t04"] == ("s01e06", AssignmentStatus.NEEDS_REVIEW)  # conflict, not a winner
+    assert result["t02"] == ("s01e01", AssignmentStatus.CONFIDENT)  # untouched
+
+
+def test_assign_can_promote_a_non_episode(
+    fake_rip: FakeRipBuilder, fake: FakeTMDB, tmp_path: Path
+) -> None:
+    # The 6.5-minute "featurette" (t05) is really the unaired pilot-ish short, say s01e14.
+    result = _run_with(fake_rip, fake, tmp_path, "FIREFLY_D1_t05.mkv=14")
+    assert result["t05"] == ("s01e14", AssignmentStatus.CONFIDENT)
+
+
+@pytest.mark.parametrize(
+    ("assign", "match"),
+    [
+        (("t09=1",), "no file on this disc"),
+        (("t02=99",), "has no episode 99"),
+        (("t02=1", "t03=1"), "episode 1 is given to both"),
+        (("t02=1", "FIREFLY_D1_t02=2"), "assigned twice"),
+    ],
+)
+def test_assign_errors(
+    fake_rip: FakeRipBuilder, fake: FakeTMDB, tmp_path: Path, assign: tuple[str, ...], match: str
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        _run_with(fake_rip, fake, tmp_path, *assign)
+
+
+# --- config file, review flow, JSON, Plex (CLI) -----------------------------------
+
+
+def _write_config(tmp_path: Path, text: str) -> None:
+    # cli_disc points XDG_CONFIG_HOME at tmp_path / "config".
+    path = tmp_path / "config" / "disc2plex" / "config.toml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+
+
+def test_cli_config_supplies_output_and_options(cli_disc: Path, tmp_path: Path) -> None:
+    _write_config(
+        tmp_path,
+        f'[library]\nroot = "{tmp_path / "lib"}"\ninclude_titles = false\n'
+        '[matching]\norder = "dvd"\nverify = "none"\n',
+    )
+    result = runner.invoke(cli.app, ["plan", str(cli_disc), "--show", "Firefly", "--disc", "1"])
+    assert result.exit_code == 0, result.output
+    assert f"Output root: {tmp_path / 'lib'}" in result.output
+    assert "Firefly (2002) - s01e11.mkv" in result.output  # dvd order, no titles
+    # Flags beat the config.
+    result = runner.invoke(
+        cli.app, ["plan", str(cli_disc), "--show", "Firefly", "--disc", "1", "--include-titles"]
+    )
+    assert "s01e11 - Serenity.mkv" in result.output
+
+
+def test_cli_bad_config_is_a_clear_error(cli_disc: Path, tmp_path: Path) -> None:
+    _write_config(tmp_path, "[library]\nroots = '/x'\n")
+    result = runner.invoke(cli.app, ["plan", str(cli_disc), "--show", "Firefly"])
+    assert result.exit_code == 1
+    assert "library.roots" in result.output
+
+
+def test_cli_config_commands(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    path = tmp_path / "disc2plex" / "config.toml"
+    assert "not created yet" in runner.invoke(cli.app, ["config", "path"]).output
+    assert "built-in defaults" in runner.invoke(cli.app, ["config", "show"]).output
+    assert runner.invoke(cli.app, ["config", "init"]).exit_code == 0
+    assert path.read_text().startswith("# disc2plex configuration")
+    again = runner.invoke(cli.app, ["config", "init"])
+    assert again.exit_code == 1 and "already exists" in again.output
+    path.write_text('[library]\nroot = "/srv/tv"\n')
+    shown = runner.invoke(cli.app, ["config", "show"]).output
+    assert 'root = "/srv/tv"' in shown and 'llm = "none"' in shown
+
+
+def test_cli_apply_header_and_summary(cli_disc: Path, library: Path) -> None:
+    result = runner.invoke(cli.app, _apply_args(cli_disc, library, "--apply", "--yes"))
+    assert result.exit_code == 0, result.output
+    assert "Dry run" not in result.output  # it isn't one
+    assert "Plan: 4 to library, 1 to extras review, 2 left in place" in result.output
+
+
+def test_cli_review_leave(cli_disc: Path, library: Path) -> None:
+    # Aired order without a hint: every episode needs review, so with --review leave
+    # only the extra moves.
+    args = ["apply", str(cli_disc), "--show", "Firefly", "--output", str(library),
+            "--review", "leave", "--apply", "--yes"]  # fmt: skip
+    result = runner.invoke(cli.app, args)
+    assert result.exit_code == 0, result.output
+    assert not (library / "_review").exists()
+    assert (cli_disc / "FIREFLY_D1_t02.mkv").exists()
+    assert (library / "_extras_review" / "rip" / "FIREFLY_D1_t05.mkv").exists()
+
+
+def test_cli_assign_from_review_folder(cli_disc: Path, library: Path) -> None:
+    # Review flow: uncertain files land in _review/<disc>/; after checking them,
+    # re-run apply on that folder with --assign to file them properly.
+    first = runner.invoke(
+        cli.app,
+        ["apply", str(cli_disc), "--show", "Firefly", "--output", str(library), "--apply", "--yes"],
+    )
+    assert first.exit_code == 0, first.output
+    review = library / "_review" / "rip"
+    assert (review / "FIREFLY_D1_t02.mkv").exists()
+    second = runner.invoke(
+        cli.app,
+        ["apply", str(review), "--show", "Firefly", "--output", str(library),
+         "--assign", "t02=1", "--apply", "--yes"],
+    )  # fmt: skip
+    assert second.exit_code == 0, second.output
+    assert (
+        library / SHOW_DIR / "Season 01" / "Firefly (2002) - s01e01 - The Train Job.mkv"
+    ).exists()
+    # The others are already in their review folder: skipped, not moved again.
+    assert (review / "FIREFLY_D1_t03.mkv").exists()
+    assert "1 to library" in second.output and "left in place" in second.output
+
+
+def test_cli_assign_bad_value(cli_disc: Path, tmp_path: Path) -> None:
+    result = runner.invoke(
+        cli.app,
+        ["plan", str(cli_disc), "--show", "Firefly", "--output", str(tmp_path), "--assign", "t02"],
+    )
+    assert result.exit_code == 1 and "--assign" in result.output
+
+
+def test_cli_apply_json(cli_disc: Path, library: Path) -> None:
+    needs_yes = runner.invoke(cli.app, _apply_args(cli_disc, library, "--apply", "--json"))
+    assert needs_yes.exit_code == 1 and "--yes" in needs_yes.output
+    result = runner.invoke(cli.app, _apply_args(cli_disc, library, "--apply", "--yes", "--json"))
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.stdout)
+    assert data["summary"].startswith("4 to library")
+    assert {e["status"] for e in data["manifest"]["entries"]} == {"done"}
+    manifest = data["manifest_path"]
+
+    dry = json.loads(runner.invoke(cli.app, ["undo", manifest, "--dry-run", "--json"]).stdout)
+    assert dry == {**dry, "undone": False, "pending": 5}
+    undone = runner.invoke(cli.app, ["undo", manifest, "--yes", "--json"])
+    data = json.loads(undone.stdout)
+    assert data["undone"] is True
+    assert {e["status"] for e in data["manifest"]["entries"]} == {"undone"}
+
+
+def _fake_plex(
+    monkeypatch: pytest.MonkeyPatch, sections: list[dict[str, object]]
+) -> list[httpx.Request]:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        if request.url.path == "/library/sections":
+            return httpx.Response(200, json={"MediaContainer": {"Directory": sections}})
+        return httpx.Response(200)
+
+    real = cli.PlexClient
+    monkeypatch.setattr(
+        cli,
+        "PlexClient",
+        lambda url, token: real(url, token, transport=httpx.MockTransport(handler)),
+    )
+    monkeypatch.setenv("PLEX_TOKEN", "plex-secret")
+    return seen
+
+
+def test_cli_apply_triggers_plex_scan(
+    cli_disc: Path, library: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_config(
+        tmp_path,
+        '[plex]\nurl = "http://plex.local:32400"\nlibrary_path = "/data/TV"\n'
+        "scan_after_apply = true\n",
+    )
+    seen = _fake_plex(
+        monkeypatch,
+        [{"key": "7", "type": "show", "title": "TV", "Location": [{"path": "/data/TV"}]}],
+    )
+    result = runner.invoke(cli.app, _apply_args(cli_disc, library, "--apply", "--yes"))
+    assert result.exit_code == 0, result.output
+    refreshes = [r for r in seen if r.url.path.endswith("/refresh")]
+    assert len(refreshes) == 1  # one show folder; review folders aren't scanned
+    assert refreshes[0].url.path == "/library/sections/7/refresh"
+    assert refreshes[0].url.params["path"] == f"/data/TV/{SHOW_DIR}"
+    assert "Plex: asked library 7 to scan" in result.output
+
+
+def test_cli_plex_scan_failure_is_only_a_warning(
+    cli_disc: Path, library: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_config(tmp_path, '[plex]\nurl = "http://plex.local:32400"\n')
+    _fake_plex(monkeypatch, [])  # no library contains the output root
+    result = runner.invoke(
+        cli.app, _apply_args(cli_disc, library, "--apply", "--yes", "--plex-scan")
+    )
+    assert result.exit_code == 0, result.output
+    assert "Plex scan not started" in result.output and "plex.section" in result.output
+    assert (library / SHOW_DIR).exists()
+
+
+def test_cli_no_plex_scan_by_default(
+    cli_disc: Path, library: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen = _fake_plex(monkeypatch, [])
+    result = runner.invoke(cli.app, _apply_args(cli_disc, library, "--apply", "--yes"))
+    assert result.exit_code == 0 and seen == [] and "Plex" not in result.output
+
+
+def test_assigning_every_episode_drops_the_ambiguous_start_warning(
+    fake_rip: FakeRipBuilder, fake: FakeTMDB, tmp_path: Path
+) -> None:
+    rip_dir, probe = firefly_disc1(fake_rip)
+
+    def warnings(*assign: str) -> tuple[str, ...]:
+        request = PlanRequest(
+            rip_dir=rip_dir, output_root=tmp_path, tmdb_id=1437,
+            assign=tuple(parse_assign(a) for a in assign),
+        )  # fmt: skip
+        return run_plan(request, scanner=scanner_for(probe), client=fake.client()).plan.warnings
+
+    assert any("ambiguous" in w for w in warnings())
+    assert any("ambiguous" in w for w in warnings("t02=1"))
+    assert not any("ambiguous" in w for w in warnings("t01=11", "t02=1", "t03=2", "t04=6"))

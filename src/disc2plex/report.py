@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
 from rich.table import Table
@@ -17,15 +18,19 @@ from disc2plex.models import (
     FileTranscript,
     Manifest,
     MediaFile,
+    Plan,
+    PlanAction,
     ScanResult,
     SeasonEpisodes,
     ShowInfo,
     ShowSummary,
 )
+from disc2plex.plan import EXTRAS_REVIEW_DIR, REVIEW_DIR
 
 if TYPE_CHECKING:
     # Type-only: pipeline imports classify, which imports this module.
     from disc2plex.pipeline import PlanRun
+    from disc2plex.plex import PlexSection
 
 
 def format_duration(seconds: float) -> str:
@@ -199,7 +204,23 @@ def _relative(path: Path | None, root: Path) -> str:
         return str(path)
 
 
-def render_plan(run: PlanRun, console: Console, *, show_evidence: bool = True) -> None:
+def plan_summary(plan: Plan) -> str:
+    """One line: how many files go where, e.g. ``5 to library, 1 to review, 2 left in place``."""
+    counts: Counter[str] = Counter()
+    for item in plan.items:
+        if item.action is PlanAction.SKIP or item.destination is None:
+            counts["left in place"] += 1
+            continue
+        top = _relative(item.destination, plan.output_root).split("/", 1)[0]
+        where = {REVIEW_DIR: "to review", EXTRAS_REVIEW_DIR: "to extras review"}
+        counts[where.get(top, "to library")] += 1
+    order = ["to library", "to review", "to extras review", "left in place"]
+    return ", ".join(f"{counts[k]} {k}" for k in order if counts[k]) or "no files"
+
+
+def render_plan(
+    run: PlanRun, console: Console, *, show_evidence: bool = True, dry_run: bool = True
+) -> None:
     """Print the plan: header, warnings/errors, the move table, and per-file evidence."""
     show, plan = run.show, run.plan
     console.print(f"[bold]{show.name}[/bold] ({show.year or '?'})  tmdb-{show.tmdb_id}")
@@ -213,7 +234,8 @@ def render_plan(run: PlanRun, console: Console, *, show_evidence: bool = True) -
             f"Typical episode length: {format_duration(run.classified.reference_seconds)}"
         )
     console.print(f"Output root: {plan.output_root}")
-    console.print("[dim]Dry run: nothing has been moved.[/dim]")
+    if dry_run:
+        console.print("[dim]Dry run: nothing has been moved.[/dim]")
 
     table = Table(title="Plan")
     table.add_column("Source")
@@ -247,15 +269,16 @@ def render_plan(run: PlanRun, console: Console, *, show_evidence: bool = True) -
 
     for warning in plan.warnings:
         console.print(f"[yellow]Warning:[/yellow] {warning}")
+    console.print(f"Plan: {plan_summary(plan)}")
     for error in plan.errors:
         console.print(f"[red]Error:[/red] {error}")
     if plan.errors:
         console.print("[red]Plan has errors; it cannot be applied until they are resolved.[/red]")
 
 
-def plan_to_json(run: PlanRun) -> str:
-    """Serialize a plan run (plan + assignments) for ``--json`` output."""
-    payload = {
+def plan_payload(run: PlanRun) -> dict[str, Any]:
+    """A plan run (plan + assignments) as JSON-ready data."""
+    return {
         "show": run.show.model_dump(mode="json"),
         "season": {
             "number": run.season.season,
@@ -267,8 +290,13 @@ def plan_to_json(run: PlanRun) -> str:
         "reference_seconds": run.classified.reference_seconds,
         "assignments": [a.model_dump(mode="json") for a in run.match.assignments],
         "plan": run.plan.model_dump(mode="json"),
+        "summary": plan_summary(run.plan),
     }
-    return json.dumps(payload, indent=2)
+
+
+def plan_to_json(run: PlanRun) -> str:
+    """Serialize a plan run for ``--json`` output."""
+    return json.dumps(plan_payload(run), indent=2)
 
 
 _ENTRY_STYLES = {
@@ -318,3 +346,15 @@ def render_transcripts(transcripts: list[FileTranscript], console: Console) -> N
                 f"  {s.text or '[yellow](no speech recognised)[/yellow]'}", soft_wrap=True
             )
         console.print()
+
+
+def render_plex_sections(sections: list[PlexSection], console: Console) -> None:
+    """Print Plex library sections (IDs usable as ``plex.section``)."""
+    table = Table(title="Plex libraries")
+    table.add_column("ID", justify="right")
+    table.add_column("Title")
+    table.add_column("Type")
+    table.add_column("Folders")
+    for section in sections:
+        table.add_row(str(section.key), section.title, section.type, "\n".join(section.locations))
+    console.print(table)

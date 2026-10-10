@@ -7,6 +7,7 @@ Where files go:
 
 - confident episodes -> ``<output>/<Show>/Season NN/<Show> - sNNeNN - Title.ext``
 - episodes needing review, unmatched episodes, unknowns -> ``<output>/_review/<disc>/``
+  (or left in the rip folder with ``review=leave``)
 - extras -> ``<output>/_extras_review/<disc>/`` (default), or skipped
 - Play-All and junk -> skipped (left where they are; nothing is ever deleted)
 """
@@ -41,12 +42,18 @@ class ExtrasMode(StrEnum):
     SKIP = "skip"
 
 
+class ReviewMode(StrEnum):
+    MOVE = "move"  # to <output>/_review/<disc>/
+    LEAVE = "leave"  # stay in the rip folder
+
+
 @dataclass(frozen=True)
 class PlanOptions:
     action: PlanAction = PlanAction.MOVE
     include_titles: bool = True
     include_tmdb_id: bool = True
     extras: ExtrasMode = ExtrasMode.REVIEW
+    review: ReviewMode = ReviewMode.MOVE
 
 
 def _review_destination(output_root: Path, folder: str, disc_name: str, source: Path) -> Path:
@@ -94,6 +101,8 @@ def _item_for(
         )
 
     def review(reason: str, folder: str = REVIEW_DIR) -> PlanItem:
+        if folder == REVIEW_DIR and options.review is ReviewMode.LEAVE:
+            return item(None, PlanAction.SKIP, f"{reason}; left in place (review: leave)")
         dest = _review_destination(output_root, folder, disc_name, a.file.path)
         return item(dest, options.action, reason)
 
@@ -146,7 +155,12 @@ def build_plan(
 
     final: list[PlanItem] = []
     for i in items:
-        if i.destination is not None and exists(i.destination):
+        if i.destination is not None and i.destination == i.source:
+            # e.g. re-running on <output>/_review/<disc>/ itself
+            i = i.model_copy(
+                update={"action": PlanAction.SKIP, "reason": f"{i.reason}; already there"}
+            )
+        elif i.destination is not None and exists(i.destination):
             warnings.append(f"{i.destination} already exists; {i.source.name} will be skipped")
             i = i.model_copy(
                 update={"action": PlanAction.SKIP, "reason": f"{i.reason}; destination exists"}

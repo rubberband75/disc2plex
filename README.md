@@ -1,69 +1,160 @@
 # disc2plex
 
-Turn a folder of MakeMKV rips from a TV-series DVD into correctly named,
-Plex-ready episode files using TMDB metadata.
+Turn a folder of MakeMKV rips from a TV-series DVD or Blu-ray into correctly
+named, Plex-ready episode files using TMDB metadata.
 
-> Work in progress. Nothing is moved unless you run `apply` (planned for a later milestone);
-> `plan` is always a dry run.
+It works out which title is which episode from title order and runtimes, and
+can check the uncertain ones against what is actually said in each episode:
+local Whisper transcribes a few minutes of audio, and an LLM (Claude, or a local
+model) picks the matching TMDB synopsis. Anything it isn't sure about goes to a
+review folder instead of being guessed.
+
+**Safe by default:** nothing moves without `apply --apply`. It never overwrites
+or deletes a file, never modifies video, and every run can be undone.
 
 ## Requirements
 
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/)
-- FFmpeg (`ffprobe` must be on `PATH`)
+- Python 3.11+ and [uv](https://docs.astral.sh/uv/)
+- FFmpeg (`ffprobe` and `ffmpeg` on `PATH`; `sudo apt install ffmpeg`)
+- A free [TMDB](https://www.themoviedb.org/settings/api) API Read Access Token
+- Optional: an Anthropic API key (`--llm claude`) or a local OpenAI-compatible
+  server such as Ollama (`--llm local`) for content verification
 
 ## Setup
 
 ```bash
-uv sync                  # creates .venv and installs runtime + dev dependencies
-cp .env.example .env     # then fill in TMDB_API_TOKEN (the "API Read Access Token")
+uv sync                      # creates .venv and installs everything
+cp .env.example .env         # fill in TMDB_API_TOKEN (and ANTHROPIC_API_KEY if wanted)
+uv run disc2plex config init # optional: writes ~/.config/disc2plex/config.toml
 uv run disc2plex --help
 ```
 
-## Usage
+Secrets live in the environment or `.env` (`./.env` or `~/.config/disc2plex/.env`):
+`TMDB_API_TOKEN`, `ANTHROPIC_API_KEY`, `PLEX_TOKEN`, `HF_TOKEN` (optional, for
+Whisper model downloads), and `DISC2PLEX_LLM_*` for a local LLM.
 
-All commands work. Matching uses title order and runtimes, and can be verified
-from what is actually said in each episode: local Whisper transcribes a few
-minutes of audio and an LLM (Claude, or a local OpenAI-compatible server such as
-Ollama) picks the matching TMDB synopsis. The first transcription downloads the
-Whisper model (~480 MB for `small`).
+## A typical disc
 
 ```bash
-# Verify uncertain matches with Claude (needs ANTHROPIC_API_KEY in .env)
-disc2plex plan ./GOOD_PLACE_S1_D1 --show "The Good Place" --season 1 \
-    --output "/srv/plex/TV Shows" --llm claude
-# ...or with a local model
-DISC2PLEX_LLM_MODEL=llama3.1:8b disc2plex plan ... --llm local
-```
+# 1. Look at what's on the disc (episodes, Play-All, extras, junk)
+disc2plex scan "./The Good Place Season One- Disc One"
 
-Transcripts are only sent to an API when you pass `--llm claude`. Answers are
-cached, so running `plan` and then `apply` costs one set of calls.
+# 2. Dry run: where would everything go, and how sure is it?
+disc2plex plan "./The Good Place Season One- Disc One" --show "The Good Place" \
+    --season 1 --disc 1 --output "/srv/plex/TV Shows"
 
-```bash
-disc2plex scan ./sample_rip
-disc2plex plan ./sample_rip --show "Show Name" --season 1 --disc-episodes 1-4 --output "/srv/plex/TV Shows"
-disc2plex plan ./FIREFLY_D1 --show Firefly --disc 1 --order dvd --output "/srv/plex/TV Shows"
-disc2plex apply ./FIREFLY_D1 --show Firefly --disc 1 --order dvd --output "/srv/plex/TV Shows" --apply
+# 3. Same command with `apply --apply` to do it (asks for confirmation)
+disc2plex apply "./The Good Place Season One- Disc One" --show "The Good Place" \
+    --season 1 --disc 1 --output "/srv/plex/TV Shows" --apply
+
+# Changed your mind? The apply output prints the exact undo command.
 disc2plex undo ~/.local/share/disc2plex/manifests/<run>.json
-disc2plex tmdb search "Show Name"
-disc2plex tmdb show 1437                 # seasons and episode groups (DVD order IDs)
-disc2plex tmdb season 1437 1 --order dvd
-disc2plex transcribe ./FIREFLY_D1 -f FIREFLY_D1_t01.mkv   # local Whisper, CPU is fine
 ```
 
-`plan` is always a dry run. It prints where each file would go, how confident the
-match is, and the evidence behind it. Files it isn't confident about are routed to
-`<output>/_review/<disc>/` rather than guessed. Pinning the disc position with
-`--disc-episodes` (or `--disc 1`) makes matches much more confident.
+Result:
 
-`apply` never overwrites an existing file, never deletes anything, and records
-every operation in a manifest (under `~/.local/share/disc2plex/manifests/`) that
-`undo` can reverse. Without `--apply` it only prints the plan.
+```
+/srv/plex/TV Shows/
+  The Good Place (2016) {tmdb-66573}/
+    Season 01/
+      The Good Place (2016) - s01e01-e02 - Everything Is Fine & Flying.mkv
+      The Good Place (2016) - s01e03 - Tahani Al-Jamil.mkv
+      ...
+  _review/            # uncertain files, hidden from Plex by a .plexignore
+  _extras_review/     # featurettes etc., for you to file
+```
+
+Telling it where the disc sits in the season (`--disc 1`, or `--disc-episodes 5-8`)
+makes matches much more confident. Without it, runtimes alone often can't tell
+episodes apart, so expect review items unless you turn on content verification.
+
+## Content verification (for discs where runtimes aren't enough)
+
+```bash
+# Claude (needs ANTHROPIC_API_KEY); a few cents per checked file, answers cached
+disc2plex plan ./DISC --show "The Good Place" --season 1 --llm claude
+
+# A local model via Ollama, LM Studio, or llama.cpp server
+DISC2PLEX_LLM_MODEL=llama3.1:8b disc2plex plan ./DISC --show ... --llm local
+
+# Check every episode, not just the uncertain ones
+disc2plex plan ./DISC --show ... --llm claude --verify all
+```
+
+Transcripts are only sent to an API when you choose `--llm claude`. Whisper runs
+locally; the first run downloads the model (~480 MB for `small`). To see what
+Whisper hears: `disc2plex transcribe ./DISC -f DISC_t03.mkv`.
+
+## Reviewing uncertain files
+
+Files that need review go to `<output>/_review/<disc>/` (or stay in the rip folder
+with `--review leave`). The plan's evidence section says why. Once you know what a
+file is, file it with `--assign` (episode numbers are TMDB's aired numbers):
+
+```bash
+disc2plex apply "/srv/plex/TV Shows/_review/The Good Place Season One- Disc One" \
+    --show "The Good Place" --season 1 --assign t04=6 --apply
+# two episodes in one file:  --assign t00=1-2
+```
+
+An assigned file is placed exactly as you said; any other file that claimed the
+same episode goes to review rather than overwriting or competing.
+
+## DVD order and odd discs
+
+```bash
+disc2plex tmdb search "Firefly"
+disc2plex tmdb show 1437                  # seasons and episode-group IDs
+disc2plex tmdb season 1437 1 --order dvd  # the episode list in DVD order
+disc2plex plan ./FIREFLY_D1 --show Firefly --disc 1 --order dvd
+```
+
+`--order dvd` (or an episode-group ID) decides which episodes are on the disc and
+in what sequence; files are still named with aired numbers, which is what Plex's
+TMDB agent matches. Play-All titles and junk are left in place; extras go to
+`_extras_review/` (`--extras skip` leaves them too).
+
+## Config file
+
+`~/.config/disc2plex/config.toml` (or `$DISC2PLEX_CONFIG`). Command-line flags win
+over the file; the file wins over built-in defaults. `disc2plex config init`
+writes a commented template; `disc2plex config show` prints the effective values.
+
+```toml
+[library]
+root = "/srv/plex/TV Shows"   # so you can drop --output
+review = "move"               # or "leave"
+
+[matching]
+llm = "claude"                # verify uncertain matches by default
+confident = 0.85              # thresholds for library / review / unmatched
+review = 0.5
+
+[plex]
+url = "http://localhost:32400"
+scan_after_apply = true       # needs PLEX_TOKEN in the environment or .env
+```
+
+## Plex library scan (optional)
+
+With `[plex]` configured, `apply --apply --plex-scan` (or `scan_after_apply = true`)
+asks Plex to scan just the show folders that received files. The library section
+is found from its folder; if Plex sees the library at a different path (for
+example a share), set `plex.library_path`, or set `plex.section` directly
+(`disc2plex plex sections` lists them). A failed scan request is only a warning.
+
+## JSON output
+
+`scan`, `plan`, `apply`, `undo`, and `transcribe` accept `--json`. `apply --apply
+--json` needs `--yes` and prints the plan plus the manifest of what was done.
 
 ## Development
 
 ```bash
 uv run pytest -q
+DISC2PLEX_REAL_WHISPER=1 uv run pytest -q tests/test_transcribe.py -k real   # real Whisper
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
 ```
+
+See `CLAUDE.md` for the design, milestones, and decisions log.

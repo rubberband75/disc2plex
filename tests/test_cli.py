@@ -58,3 +58,15 @@ def test_missing_ffprobe_gives_clear_error(tmp_path: Path, monkeypatch: pytest.M
     result = runner.invoke(app, ["scan", str(tmp_path)])
     assert result.exit_code == 1
     assert "ffprobe not found" in result.output
+
+
+def test_help_shows_config_backed_defaults() -> None:
+    # Rich would swallow an unescaped "[default: ...]" as a markup tag.
+    result = runner.invoke(app, ["plan", "--help"])
+    assert "[default: aired]" in result.output
+    assert "[default: none]" in result.output
+
+
+@pytest.mark.parametrize("args", [["config", "--help"], ["plex", "sections", "--help"]])
+def test_new_command_help(args: list[str]) -> None:
+    assert runner.invoke(app, args).exit_code == 0

@@ -70,6 +70,10 @@ class HeuristicConfig:
 ContentVotes = Mapping[Path, Sequence[tuple[tuple[int, int], float]]]
 
 # Runtime fit below this (about 17% off with the default sigma) is called a mismatch.
+AMBIGUOUS_START_NOTE = (
+    "the starting episode is ambiguous from runtimes alone; pass "
+    "--disc-episodes (e.g. 5-8) or --disc to pin it"
+)
 MISMATCH_FIT = 0.3
 
 
@@ -334,10 +338,7 @@ def match_heuristic(
             else "only one possible start"
         )
         if order_conf < 0.7:
-            notes.append(
-                "the starting episode is ambiguous from runtimes alone; pass "
-                "--disc-episodes (e.g. 5-8) or --disc to pin it"
-            )
+            notes.append(AMBIGUOUS_START_NOTE)
 
     gap_reasons: list[str] = []
     if best.skipped:

@@ -370,6 +370,20 @@ def test_targets_low_vs_all() -> None:
     assert verifier.targets(match, VerifyMode.NONE) == []
 
 
+def test_targets_skip_user_assigned_files() -> None:
+    assigned = assignment("t00", [1], 1.0).model_copy(update={"signals": {"assigned": 1.0}})
+    match = MatchResult(assignments=(assigned, assignment("t01", [2], 0.95)))
+    verifier = _verifier(OracleLLM({}))
+    assert [a.file.path.stem for a in verifier.targets(match, VerifyMode.ALL)] == ["t01"]
+
+
+def test_usage_note_only_when_verification_did_something() -> None:
+    match = MatchResult(assignments=(assignment("t00", [1], 0.95),))
+    idle = Evidence()
+    idle.usage.backend = "fake"
+    assert apply_evidence(match, idle).notes == ()
+
+
 def test_gather_uses_two_slices_for_double_files(fake_transcribe: list[tuple[str, int]]) -> None:
     match = MatchResult(
         assignments=(assignment("t00", [1, 2], 0.5, 44), assignment("t01", [3], 0.5)),

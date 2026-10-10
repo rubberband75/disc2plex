@@ -16,7 +16,8 @@ from disc2plex.models import (
     PlanAction,
     PlanItem,
 )
-from disc2plex.plan import ExtrasMode, PlanOptions, build_plan
+from disc2plex.plan import ExtrasMode, PlanOptions, ReviewMode, build_plan
+from disc2plex.report import plan_summary
 
 ROOT = Path("/library/TV Shows")
 SHOW = make_show("Star Trek: The Next Generation", 1987, 655)
@@ -190,3 +191,49 @@ def test_weird_disc_name_is_sanitized_and_contained() -> None:
 def test_match_notes_become_warnings() -> None:
     plan = build_plan(MatchResult(notes=("episode 3 missing",)), SHOW, ROOT, "disc")
     assert plan.warnings == ("episode 3 missing",)
+
+
+def test_review_leave_keeps_uncertain_files_in_place() -> None:
+    options = PlanOptions(review=ReviewMode.LEAVE)
+    items = plan_for(
+        assignment("t00.mkv", episodes=(ep(1),)),
+        assignment("t01.mkv", episodes=(ep(2),), status=AssignmentStatus.NEEDS_REVIEW),
+        assignment("t02.mkv", FileClass.UNKNOWN),
+        assignment("t03.mkv", FileClass.EXTRA),
+        options=options,
+    )
+    assert items["t00.mkv"].action is PlanAction.MOVE
+    for name in ("t01.mkv", "t02.mkv"):
+        assert items[name].action is PlanAction.SKIP
+        assert items[name].destination is None
+        assert "left in place" in items[name].reason
+    # Extras follow --extras, not --review.
+    assert items["t03.mkv"].destination == ROOT / "_extras_review" / "STTNG_S3_D1" / "t03.mkv"
+
+
+def test_file_already_in_its_review_folder_is_skipped() -> None:
+    a = assignment("t01.mkv", episodes=(ep(2),), status=AssignmentStatus.NEEDS_REVIEW)
+    in_review = a.model_copy(
+        update={"file": a.file.model_copy(update={"path": ROOT / "_review" / "D1" / "t01.mkv"})}
+    )
+    plan = build_plan(MatchResult(assignments=(in_review,)), SHOW, ROOT, "D1")
+    assert plan.items[0].action is PlanAction.SKIP
+    assert "already there" in plan.items[0].reason
+
+
+def test_plan_summary_counts() -> None:
+    plan = build_plan(
+        MatchResult(
+            assignments=(
+                assignment("t00.mkv", episodes=(ep(1),)),
+                assignment("t01.mkv", episodes=(ep(2),)),
+                assignment("t02.mkv", episodes=(ep(3),), status=AssignmentStatus.NEEDS_REVIEW),
+                assignment("t03.mkv", FileClass.EXTRA),
+                assignment("t04.mkv", FileClass.PLAY_ALL),
+            )
+        ),
+        SHOW,
+        ROOT,
+        "D1",
+    )
+    assert plan_summary(plan) == "2 to library, 1 to review, 1 to extras review, 1 left in place"

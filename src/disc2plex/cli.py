@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from dataclasses import replace
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, TypeVar
 
 import typer
 from rich.console import Console
@@ -30,25 +30,37 @@ from disc2plex.apply import (
     undo_manifest,
 )
 from disc2plex.classify import classify
-from disc2plex.config import load_dotenv
+from disc2plex.config import (
+    CONFIG_TEMPLATE,
+    ConfigError,
+    Settings,
+    config_path,
+    load_dotenv,
+    load_settings,
+)
 from disc2plex.llm.base import CachedLLM, LLMBackend, LLMError, default_llm_cache_dir
 from disc2plex.llm.claude import ClaudeBackend
 from disc2plex.llm.openai_compat import DEFAULT_BASE_URL, OpenAICompatBackend
+from disc2plex.match.combine import Thresholds
 from disc2plex.match.content import ContentVerifier, VerifyMode
 from disc2plex.models import (
     EntryStatus,
     FileClass,
     FileTranscript,
+    Manifest,
     PlanAction,
     ScanResult,
     ShowSummary,
 )
-from disc2plex.pipeline import PlanRequest, PlanRun, parse_disc_range, run_plan
-from disc2plex.plan import ExtrasMode, PlanOptions
+from disc2plex.pipeline import PlanRequest, PlanRun, parse_assign, parse_disc_range, run_plan
+from disc2plex.plan import EXTRAS_REVIEW_DIR, REVIEW_DIR, ExtrasMode, PlanOptions, ReviewMode
+from disc2plex.plex import PlexClient, PlexError, find_section, server_path
 from disc2plex.report import (
+    plan_payload,
     plan_to_json,
     render_manifest,
     render_plan,
+    render_plex_sections,
     render_scan,
     render_search_results,
     render_season,
@@ -81,6 +93,12 @@ app = typer.Typer(
 )
 tmdb_app = typer.Typer(help="TMDB helper commands.", no_args_is_help=True)
 app.add_typer(tmdb_app, name="tmdb")
+config_app = typer.Typer(help="Show or create the config file.", no_args_is_help=True)
+app.add_typer(config_app, name="config")
+plex_app = typer.Typer(help="Plex Media Server helpers.", no_args_is_help=True)
+app.add_typer(plex_app, name="plex")
+
+T = TypeVar("T")
 
 
 class LLMChoice(StrEnum):
@@ -114,17 +132,30 @@ DiscEpisodesOpt = Annotated[
         help="Episode positions on this disc in the chosen order, e.g. 1-4.",
     ),
 ]
+# Options backed by config.toml default to None, meaning "not given": the config
+# value applies, then the built-in default. Help text names the built-in default.
 OrderOpt = Annotated[
+    str | None,
+    typer.Option(
+        "--order", help="Episode order: aired, dvd, or a TMDB episode-group ID. \\[default: aired]"
+    ),
+]
+TmdbOrderOpt = Annotated[
     str, typer.Option("--order", help="Episode order: aired, dvd, or a TMDB episode-group ID.")
 ]
-OutputOpt = Annotated[Path | None, typer.Option("--output", help="Plex TV library root.")]
+OutputOpt = Annotated[
+    Path | None,
+    typer.Option("--output", help="Plex TV library root. \\[default: library.root from config]"),
+]
 VerifyOpt = Annotated[
-    VerifyMode, typer.Option("--verify", help="When to run content verification.")
+    VerifyMode | None,
+    typer.Option("--verify", help="When to run content verification. \\[default: low]"),
 ]
 LLMOpt = Annotated[
-    LLMChoice,
+    LLMChoice | None,
     typer.Option(
-        "--llm", help="LLM for content verification (claude sends transcripts to the API)."
+        "--llm",
+        help="LLM for content verification; claude sends transcripts to the API. \\[default: none]",
     ),
 ]
 LLMModelOpt = Annotated[
@@ -134,14 +165,42 @@ LLMModelOpt = Annotated[
         help="Model name (default: claude-opus-5-5 for claude; DISC2PLEX_LLM_MODEL for local).",
     ),
 ]
-WhisperOpt = Annotated[str, typer.Option("--whisper-model", help="faster-whisper model size.")]
-LangOpt = Annotated[str, typer.Option("--lang", help="Preferred audio language.")]
-ActionOpt = Annotated[FileAction, typer.Option("--action", help="How to place files.")]
-TitlesOpt = Annotated[
-    bool,
-    typer.Option("--include-titles/--no-titles", help="Append episode titles to filenames."),
+WhisperOpt = Annotated[
+    str | None,
+    typer.Option("--whisper-model", help="faster-whisper model size. \\[default: small]"),
 ]
-ExtrasOpt = Annotated[ExtrasMode, typer.Option("--extras", help="Where extras go.")]
+LangOpt = Annotated[
+    str | None, typer.Option("--lang", help="Preferred audio language. \\[default: en]")
+]
+ActionOpt = Annotated[
+    FileAction | None, typer.Option("--action", help="How to place files. \\[default: move]")
+]
+TitlesOpt = Annotated[
+    bool | None,
+    typer.Option(
+        "--include-titles/--no-titles",
+        help="Append episode titles to filenames. \\[default: include]",
+    ),
+]
+ExtrasOpt = Annotated[
+    ExtrasMode | None, typer.Option("--extras", help="Where extras go. \\[default: review]")
+]
+ReviewOpt = Annotated[
+    ReviewMode | None,
+    typer.Option(
+        "--review",
+        help="Uncertain files: move to <output>/_review/<disc>/, or leave in the rip folder. "
+        "\\[default: move]",
+    ),
+]
+AssignOpt = Annotated[
+    list[str] | None,
+    typer.Option(
+        "--assign",
+        help="Identify a file yourself: FILE=EPISODES (aired numbers), e.g. t04=6 or t00=1-2. "
+        "Repeatable.",
+    ),
+]
 YesOpt = Annotated[bool, typer.Option("--yes", "-y", help="Skip interactive prompts.")]
 JsonOpt = Annotated[bool, typer.Option("--json", help="Machine-readable output.")]
 
@@ -226,7 +285,20 @@ def _fail(message: str) -> typer.Exit:
     return typer.Exit(code=1)
 
 
+def _settings() -> Settings:
+    try:
+        return load_settings()
+    except ConfigError as exc:
+        raise _fail(str(exc)) from exc
+
+
+def _pick(flag: T | None, configured: T) -> T:
+    """CLI flag if given, else the config value (which carries the built-in default)."""
+    return configured if flag is None else flag
+
+
 def _plan_request(
+    settings: Settings,
     rip_dir: Path,
     output: Path | None,
     show: str | None,
@@ -235,34 +307,51 @@ def _plan_request(
     season: int | None,
     disc: int | None,
     disc_episodes: str | None,
-    order: str,
-    action: FileAction,
-    include_titles: bool,
-    extras: ExtrasMode,
-    verify: VerifyMode,
+    order: str | None,
+    action: FileAction | None,
+    include_titles: bool | None,
+    extras: ExtrasMode | None,
+    review: ReviewMode | None,
+    verify: VerifyMode | None,
+    assign: list[str] | None,
 ) -> PlanRequest:
-    if output is None:
-        raise _fail("--output is required (your Plex TV library root)")
+    lib, matching = settings.library, settings.matching
+    root = _pick(output, lib.root)
+    if root is None:
+        raise _fail(
+            "--output is required (your Plex TV library root), "
+            f"or set library.root in {config_path()}"
+        )
     if show is None and tmdb_id is None:
         raise _fail("pass --show NAME or --tmdb-id ID")
     try:
         disc_range = parse_disc_range(disc_episodes) if disc_episodes else None
     except ValueError as exc:
         raise _fail(f"--disc-episodes: {exc}") from exc
+    try:
+        overrides = tuple(parse_assign(text) for text in assign or ())
+    except ValueError as exc:
+        raise _fail(f"--assign: {exc}") from exc
     return PlanRequest(
         rip_dir=rip_dir.resolve(),
-        output_root=output.expanduser().resolve(),
+        output_root=root.expanduser().resolve(),
         show_name=show,
         year=year,
         tmdb_id=tmdb_id,
         season=season,
         disc=disc,
         disc_range=disc_range,
-        order=order,
-        verify=verify,
+        order=_pick(order, matching.order),
+        verify=_pick(verify, VerifyMode(matching.verify)),
         options=PlanOptions(
-            action=PlanAction(action.value), include_titles=include_titles, extras=extras
+            action=PlanAction(_pick(action, FileAction(lib.action)).value),
+            include_titles=_pick(include_titles, lib.include_titles),
+            include_tmdb_id=lib.include_tmdb_id,
+            extras=_pick(extras, ExtrasMode(lib.extras)),
+            review=_pick(review, ReviewMode(lib.review)),
         ),
+        thresholds=Thresholds(confident=matching.confident, review=matching.review),
+        assign=overrides,
     )
 
 
@@ -282,26 +371,33 @@ def _prompt_for_show(candidates: Sequence[ShowSummary]) -> int:
         console.print(f"Enter a number from 1 to {len(candidates)}.")
 
 
-def _make_llm(llm: LLMChoice, model: str | None) -> LLMBackend:
+def _make_llm(llm: LLMChoice, model: str | None, settings: Settings) -> LLMBackend:
+    """Model: --llm-model, then (local only) DISC2PLEX_LLM_MODEL, then config."""
     if llm is LLMChoice.CLAUDE:
+        model = model or settings.claude.model
         return ClaudeBackend(model) if model else ClaudeBackend()
+    local = settings.local_llm
     return OpenAICompatBackend(
-        model or os.environ.get("DISC2PLEX_LLM_MODEL", ""),
-        base_url=os.environ.get("DISC2PLEX_LLM_BASE_URL", DEFAULT_BASE_URL),
+        model or os.environ.get("DISC2PLEX_LLM_MODEL") or local.model or "",
+        base_url=os.environ.get("DISC2PLEX_LLM_BASE_URL") or local.base_url or DEFAULT_BASE_URL,
         api_key=os.environ.get("DISC2PLEX_LLM_API_KEY"),
     )
 
 
 def _build_verifier(
+    settings: Settings,
     verify: VerifyMode,
-    llm: LLMChoice,
+    llm_flag: LLMChoice | None,
     llm_model: str | None,
-    whisper_model: str,
-    lang: str,
+    whisper_flag: str | None,
+    lang_flag: str | None,
     *,
     quiet: bool,
 ) -> ContentVerifier | None:
     """Assemble transcription + LLM for content verification, or None if not requested."""
+    llm = _pick(llm_flag, LLMChoice(settings.matching.llm))
+    whisper_model = _pick(whisper_flag, settings.matching.whisper_model)
+    lang = _pick(lang_flag, settings.matching.lang)
     if verify is VerifyMode.NONE:
         return None
     if llm is LLMChoice.NONE:
@@ -317,7 +413,7 @@ def _build_verifier(
         raise _fail(f"--whisper-model must be one of {', '.join(WHISPER_MODELS)}")
     load_dotenv()  # ANTHROPIC_API_KEY / HF_TOKEN / DISC2PLEX_LLM_* may live in .env
     try:
-        backend = _make_llm(llm, llm_model)
+        backend = _make_llm(llm, llm_model, settings)
     except LLMError as exc:
         raise _fail(str(exc)) from exc
     return ContentVerifier(
@@ -361,26 +457,31 @@ def plan(
     season: SeasonOpt = None,
     disc: DiscOpt = None,
     disc_episodes: DiscEpisodesOpt = None,
-    order: OrderOpt = "aired",
+    order: OrderOpt = None,
     output: OutputOpt = None,
-    verify: VerifyOpt = VerifyMode.LOW,
-    llm: LLMOpt = LLMChoice.NONE,
+    verify: VerifyOpt = None,
+    llm: LLMOpt = None,
     llm_model: LLMModelOpt = None,
-    whisper_model: WhisperOpt = "small",
-    lang: LangOpt = "en",
-    action: ActionOpt = FileAction.MOVE,
-    include_titles: TitlesOpt = True,
-    extras: ExtrasOpt = ExtrasMode.REVIEW,
+    whisper_model: WhisperOpt = None,
+    lang: LangOpt = None,
+    action: ActionOpt = None,
+    include_titles: TitlesOpt = None,
+    extras: ExtrasOpt = None,
+    review: ReviewOpt = None,
+    assign: AssignOpt = None,
     yes: YesOpt = False,
     json_out: JsonOpt = False,
 ) -> None:
     """Run the full pipeline and print the rename plan (always a dry run)."""
     require_ffprobe()
+    settings = _settings()
     request = _plan_request(
-        rip_dir, output, show, year, tmdb_id, season, disc, disc_episodes, order,
-        action, include_titles, extras, verify,
+        settings, rip_dir, output, show, year, tmdb_id, season, disc, disc_episodes, order,
+        action, include_titles, extras, review, verify, assign,
     )  # fmt: skip
-    verifier = _build_verifier(verify, llm, llm_model, whisper_model, lang, quiet=json_out)
+    verifier = _build_verifier(
+        settings, request.verify, llm, llm_model, whisper_model, lang, quiet=json_out
+    )
     interactive = not yes and not json_out and _stdin_is_terminal()
     run = _run_pipeline(request, interactive=interactive, verifier=verifier)
     if json_out:
@@ -400,44 +501,56 @@ def apply(
     season: SeasonOpt = None,
     disc: DiscOpt = None,
     disc_episodes: DiscEpisodesOpt = None,
-    order: OrderOpt = "aired",
+    order: OrderOpt = None,
     output: OutputOpt = None,
-    verify: VerifyOpt = VerifyMode.LOW,
-    llm: LLMOpt = LLMChoice.NONE,
+    verify: VerifyOpt = None,
+    llm: LLMOpt = None,
     llm_model: LLMModelOpt = None,
-    whisper_model: WhisperOpt = "small",
-    lang: LangOpt = "en",
-    action: ActionOpt = FileAction.MOVE,
-    include_titles: TitlesOpt = True,
-    extras: ExtrasOpt = ExtrasMode.REVIEW,
+    whisper_model: WhisperOpt = None,
+    lang: LangOpt = None,
+    action: ActionOpt = None,
+    include_titles: TitlesOpt = None,
+    extras: ExtrasOpt = None,
+    review: ReviewOpt = None,
+    assign: AssignOpt = None,
     do_apply: Annotated[
         bool, typer.Option("--apply", help="Actually move files. Without it, this is a dry run.")
     ] = False,
+    plex_scan: Annotated[
+        bool | None,
+        typer.Option(
+            "--plex-scan/--no-plex-scan",
+            help="Ask Plex to scan the show folder afterwards. \\[default: plex.scan_after_apply]",
+        ),
+    ] = None,
     yes: YesOpt = False,
     json_out: JsonOpt = False,
 ) -> None:
     """Build the plan, then execute it if --apply is given."""
     require_ffprobe()
+    settings = _settings()
     request = _plan_request(
-        rip_dir, output, show, year, tmdb_id, season, disc, disc_episodes, order,
-        action, include_titles, extras, verify,
+        settings, rip_dir, output, show, year, tmdb_id, season, disc, disc_episodes, order,
+        action, include_titles, extras, review, verify, assign,
     )  # fmt: skip
-    verifier = _build_verifier(verify, llm, llm_model, whisper_model, lang, quiet=json_out)
+    if do_apply and json_out and not yes:
+        raise _fail("--json with --apply needs --yes (there's no prompt in JSON mode)")
+    verifier = _build_verifier(
+        settings, request.verify, llm, llm_model, whisper_model, lang, quiet=json_out
+    )
     terminal = _stdin_is_terminal()
     run = _run_pipeline(
         request, interactive=not yes and not json_out and terminal, verifier=verifier
     )
     console = Console()
-    if json_out:
-        typer.echo(plan_to_json(run))
-    else:
-        render_plan(run, console, show_evidence=not do_apply)
-    if run.plan.errors:
-        raise typer.Exit(code=1)
-    if not do_apply:
-        if not json_out:
+    if not json_out:
+        render_plan(run, console, show_evidence=not do_apply, dry_run=not do_apply)
+    if run.plan.errors or not do_apply:
+        if json_out:
+            typer.echo(plan_to_json(run))
+        elif not run.plan.errors:
             console.print("Dry run only. Re-run with [bold]--apply[/bold] to execute this plan.")
-        return
+        raise typer.Exit(code=1 if run.plan.errors else 0)
 
     count = sum(1 for i in run.plan.items if i.action is not PlanAction.SKIP)
     if not yes:
@@ -445,10 +558,13 @@ def apply(
             raise _fail("refusing to apply without confirmation; pass --yes")
         if not typer.confirm(f"Apply {count} file operation(s) under {request.output_root}?"):
             raise typer.Exit(code=1)
+    opts = request.options
     args: dict[str, str | int | float | bool | None] = {
         "show": show, "tmdb_id": run.show.tmdb_id, "season": run.season.season,
-        "order": order, "disc": disc, "disc_episodes": disc_episodes,
-        "action": action.value, "extras": extras.value, "include_titles": include_titles,
+        "order": request.order, "disc": disc, "disc_episodes": disc_episodes,
+        "action": opts.action.value, "extras": opts.extras.value,
+        "review": opts.review.value, "include_titles": opts.include_titles,
+        "assign": ", ".join(assign) if assign else None,
     }  # fmt: skip
     try:
         manifest, manifest_path = apply_plan(
@@ -456,12 +572,77 @@ def apply(
         )
     except ApplyError as exc:
         raise _fail(str(exc)) from exc
-    render_manifest(manifest, console, title="Applied")
-    # Plain echo so long paths aren't wrapped mid-word (they get copy-pasted).
-    typer.echo(f"Manifest: {manifest_path}")
-    typer.echo(f"Undo with: disc2plex undo '{manifest_path}'")
-    if any(e.status is EntryStatus.FAILED for e in manifest.entries):
+    failed = any(e.status is EntryStatus.FAILED for e in manifest.entries)
+    plex_note = None
+    if _pick(plex_scan, settings.plex.scan_after_apply) and not failed:
+        plex_note = _plex_scan(manifest, settings)
+    if json_out:
+        payload = {
+            **plan_payload(run),
+            "manifest_path": str(manifest_path),
+            "manifest": manifest.model_dump(mode="json"),
+            "plex": plex_note,
+        }
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        render_manifest(manifest, console, title="Applied")
+        # Plain echo so long paths aren't wrapped mid-word (they get copy-pasted).
+        typer.echo(f"Manifest: {manifest_path}")
+        typer.echo(f"Undo with: disc2plex undo '{manifest_path}'")
+        if plex_note:
+            typer.echo(f"Plex: {plex_note}")
+    if failed:
         raise typer.Exit(code=1)
+
+
+def _library_folders(manifest: Manifest) -> list[Path]:
+    """Show folders that received files in this run (review folders excluded)."""
+    folders: set[Path] = set()
+    for e in manifest.entries:
+        if e.status is not EntryStatus.DONE:
+            continue
+        top = e.destination.relative_to(manifest.output_root).parts[0]
+        if top not in (REVIEW_DIR, EXTRAS_REVIEW_DIR):
+            folders.add(manifest.output_root / top)
+    return sorted(folders)
+
+
+def _plex_client(settings: Settings) -> PlexClient:
+    load_dotenv()
+    url = settings.plex.url or os.environ.get("PLEX_URL")
+    if not url:
+        raise PlexError(f"set plex.url in {config_path()} (or PLEX_URL)")
+    return PlexClient(url, os.environ.get("PLEX_TOKEN", ""))
+
+
+def _plex_scan(manifest: Manifest, settings: Settings) -> str:
+    """Ask Plex to scan each show folder that got files. Returns a one-line outcome.
+
+    Never fails the command: the files are already in place, and a scan can be
+    started from Plex itself.
+    """
+    folders = _library_folders(manifest)
+    if not folders:
+        return "nothing new in the library; no scan requested"
+    library_path = settings.plex.library_path
+    root = manifest.output_root
+    try:
+        with _plex_client(settings) as plex:
+            section = settings.plex.section
+            if section is None:
+                found = find_section(plex.sections(), server_path(root, root, library_path))
+                if found is None:
+                    raise PlexError(
+                        f"no Plex TV library contains {server_path(root, root, library_path)}; "
+                        "set plex.section (see `disc2plex plex sections`) or plex.library_path"
+                    )
+                section = found.key
+            for folder in folders:
+                plex.refresh(section, server_path(folder, root, library_path))
+    except PlexError as exc:
+        typer.secho(f"Warning: Plex scan not started: {exc}", err=True, fg=typer.colors.YELLOW)
+        return f"scan not started ({exc})"
+    return f"asked library {section} to scan {', '.join(f.name for f in folders)}"
 
 
 @app.command()
@@ -473,6 +654,7 @@ def undo(
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="Show what would be reversed without doing it.")
     ] = False,
+    json_out: JsonOpt = False,
 ) -> None:
     """Reverse a previous apply using its manifest."""
     try:
@@ -481,22 +663,37 @@ def undo(
         raise _fail(str(exc)) from exc
     console = Console()
     todo = [e for e in loaded.entries if e.status is EntryStatus.DONE]
-    render_manifest(loaded, console, title=f"Run {loaded.run_id} ({loaded.created_at})")
-    if not todo:
-        console.print("Nothing to undo.")
-        return
-    if dry_run:
-        console.print(f"Dry run: {len(todo)} operation(s) would be reversed.")
+
+    def emit_json(m: Manifest, *, undone: bool) -> None:
+        payload = {"undone": undone, "pending": len(todo), "manifest": m.model_dump(mode="json")}
+        typer.echo(json.dumps(payload, indent=2))
+
+    if not json_out:
+        render_manifest(loaded, console, title=f"Run {loaded.run_id} ({loaded.created_at})")
+    if not todo or dry_run:
+        if json_out:
+            emit_json(loaded, undone=False)
+        elif not todo:
+            console.print("Nothing to undo.")
+        else:
+            console.print(f"Dry run: {len(todo)} operation(s) would be reversed.")
         return
     if not yes:
-        if not _stdin_is_terminal():
+        if json_out or not _stdin_is_terminal():
             raise _fail("refusing to undo without confirmation; pass --yes")
         if not typer.confirm(f"Reverse {len(todo)} operation(s)?"):
             raise typer.Exit(code=1)
     result = undo_manifest(loaded, manifest)
-    render_manifest(result, console, title="Undo result")
-    if any(e.status is EntryStatus.DONE for e in result.entries):
-        console.print("[yellow]Some operations could not be reversed; see notes above.[/yellow]")
+    incomplete = any(e.status is EntryStatus.DONE for e in result.entries)
+    if json_out:
+        emit_json(result, undone=True)
+    else:
+        render_manifest(result, console, title="Undo result")
+        if incomplete:
+            console.print(
+                "[yellow]Some operations could not be reversed; see notes above.[/yellow]"
+            )
+    if incomplete:
         raise typer.Exit(code=1)
 
 
@@ -510,8 +707,8 @@ def transcribe(
     all_files: Annotated[
         bool, typer.Option("--all", help="Include Play-All, extras, and junk titles.")
     ] = False,
-    whisper_model: WhisperOpt = "small",
-    lang: LangOpt = "en",
+    whisper_model: WhisperOpt = None,
+    lang: LangOpt = None,
     opening: Annotated[
         bool, typer.Option("--opening", help="Also transcribe a slice near the start.")
     ] = False,
@@ -522,6 +719,9 @@ def transcribe(
 ) -> None:
     """Transcribe a slice of each episode's audio with local Whisper (debugging aid)."""
     require_ffprobe()
+    settings = _settings()
+    whisper_model = _pick(whisper_model, settings.matching.whisper_model)
+    lang = _pick(lang, settings.matching.lang)
     if whisper_model not in WHISPER_MODELS:
         raise _fail(f"--whisper-model must be one of {', '.join(WHISPER_MODELS)}")
     load_dotenv()  # HF_TOKEN avoids anonymous rate limits on the first model download
@@ -597,9 +797,50 @@ def tmdb_show(tmdb_id: Annotated[int, typer.Argument(help="TMDB show ID.")]) -> 
 def tmdb_season(
     tmdb_id: Annotated[int, typer.Argument(help="TMDB show ID.")],
     season: Annotated[int, typer.Argument(help="Season number.")],
-    order: OrderOpt = "aired",
+    order: TmdbOrderOpt = "aired",
 ) -> None:
     """List a season's episodes in aired, DVD, or episode-group order."""
     with tmdb_session() as client:
         show = client.get_show(tmdb_id)
         render_season(season_episodes(client, show, season, order), Console())
+
+
+@config_app.command("path")
+def config_path_cmd() -> None:
+    """Print where the config file is read from."""
+    path = config_path()
+    typer.echo(f"{path}{'' if path.exists() else '  (not created yet)'}")
+
+
+@config_app.command("show")
+def config_show() -> None:
+    """Print the effective settings (config file over built-in defaults)."""
+    settings = _settings()
+    path = config_path()
+    typer.echo(f"# from {path}" if path.exists() else f"# {path} not found: built-in defaults")
+    for section, values in settings.model_dump(mode="json").items():
+        typer.echo(f"[{section}]")
+        for key, value in values.items():
+            typer.echo(f"{key} = {json.dumps(value)}")
+
+
+@config_app.command("init")
+def config_init() -> None:
+    """Write a commented config template (never overwrites an existing file)."""
+    path = config_path()
+    if path.exists():
+        raise _fail(f"{path} already exists; edit it directly")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(CONFIG_TEMPLATE, encoding="utf-8")
+    typer.echo(f"Wrote {path}")
+
+
+@plex_app.command("sections")
+def plex_sections() -> None:
+    """List Plex libraries and their IDs (for plex.section in the config)."""
+    settings = _settings()
+    try:
+        with _plex_client(settings) as plex:
+            render_plex_sections(plex.sections(), Console())
+    except PlexError as exc:
+        raise _fail(str(exc)) from exc

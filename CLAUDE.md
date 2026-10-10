@@ -206,7 +206,11 @@ disc2plex tmdb   search "Show Name"              # helper to find TMDB IDs
 disc2plex tmdb   show <tmdb-id>                  # seasons + episode-group IDs for --order
 disc2plex tmdb   season <tmdb-id> <n> [--order]  # episode list in the chosen order
 disc2plex transcribe <rip_dir> [-f NAME] [--json]  # Whisper transcript of each episode's middle (debug)
+disc2plex config path|show|init                  # config file location / effective values / template
+disc2plex plex sections                          # Plex library IDs (for plex.section)
 # content verification: add  --verify low|all --llm claude|local [--llm-model M]  to plan/apply
+# review flow: --review move|leave, and --assign FILE=EPISODES (e.g. t04=6, t00=1-2) to file reviewed items
+# apply: --plex-scan/--no-plex-scan asks Plex to scan the show folders afterwards
 ```
 
 Common options:
@@ -219,7 +223,7 @@ Common options:
 - `--action move|hardlink|copy`, `--include-titles/--no-titles`, `--extras review|season0|skip`
 - `--apply` (only on `apply`; `plan` is always dry-run), `--yes` (skip prompts), `--json` (machine-readable output), `-v/-vv`
 
-Config file: `~/.config/disc2plex/config.toml` (library root, default LLM backend, thresholds). CLI flags override config; config overrides defaults.
+Config file: `~/.config/disc2plex/config.toml` or `$DISC2PLEX_CONFIG` (tables `[library]`, `[matching]`, `[claude]`, `[local_llm]`, `[plex]`; see `disc2plex config init`). CLI flags override config; config overrides defaults. Secrets stay in the environment / `.env`, never in the TOML.
 
 ---
 
@@ -282,6 +286,7 @@ uv run mypy              # strict mode, configured for src/ in pyproject.toml
 # try it (safe)
 uv run disc2plex scan ./sample_rip
 uv run disc2plex plan ./sample_rip --show "Show Name" --season 1 --disc-episodes 1-4 --output /tmp/fake-library
+DISC2PLEX_CONFIG=/tmp/test-config.toml uv run disc2plex config show   # try config without touching ~/.config
 ```
 
 ---
@@ -403,3 +408,8 @@ When starting, ask the user about these and record answers in this file:
   - Live result, The Good Place S1D1 with no disc hint: start inferred at position 1 (margin 4.4), t00/t01/t02/t03/t06 confident and correct (96-98%), t04 -> review because Claude said "Flying" (e02, 85%) for what is really e06 and t00 has supporting evidence for e02. 6 calls, ~17.7k input / 1.5k output tokens.
   - Known limit: synopsis-only matching can be confidently wrong when synopses overlap (t04). Possible follow-up: a second excerpt (`--opening`) when content disagrees.
 - 2026-10-10: First real `apply --apply` (user asked), on scratch copies of t03 + t04 only; `inputs/` untouched. Found and fixed a confidently wrong match: with no disc hint, t04's wrong "e02" answer pulled the inferred start to position 1 and then "agreed" with it (91%). Now, when the start is inferred, agreement only boosts past review if agreeing files outnumber disagreeing ones more than 2:1 (full disc 1: 5 vs 1, still confident; this pair: 1 vs 1, both review, with a note to pass `--disc-episodes`). With `--disc-episodes 5-6` both moved to the right names; apply, undo, and the review-folder path all round-tripped with identical checksums.
+- 2026-10-10: Milestone 10 (polish) done. No new dependencies (`tomllib` is stdlib; Plex uses `httpx`).
+  - Config: `config.toml` validated with pydantic (`extra="forbid"`, so a typo is an error naming the key; thresholds must satisfy review < confident). Config-backed CLI options default to `None` ("not given") and resolve flag > config > built-in default; for the local LLM, `DISC2PLEX_LLM_*` env vars sit between the flag and the config. Tests isolate XDG dirs and settings env vars with an autouse fixture so they never read the user's config.
+  - Review flow: `--review leave` keeps uncertain files in the rip folder (extras still follow `--extras`). `--assign FILE=EPISODES` (file name, stem, or `tNN`; aired episode numbers) pins a file at confidence 1; `decide` keeps it and demotes any other claimant to review. Assigned files skip content verification. Re-running on `_review/<disc>/` itself works: files already at their review destination are skipped ("already there"). Verified live: no-hint apply sent t03/t04 to review, `--assign t03=5 --assign t04=6` on the review folder filed them, both undone cleanly.
+  - Reports: `apply --apply` no longer prints "Dry run" in its header; plans end with a one-line summary ("4 to library, 1 to extras review, 2 left in place"); the content-verification usage note only appears when something was checked; the ambiguous-start warning is dropped when every matched file was assigned. `apply --apply --json` (requires `--yes`) prints the plan, summary, manifest path, and manifest; `undo --json` prints the result.
+  - Plex (`plex.py`): optional, off by default. After a successful apply, `GET /library/sections/{id}/refresh?path=<show folder>` for each show folder that received files (review folders aren't scanned). Section found from library folder locations (most specific TV section containing the root), or `plex.section`; `plex.library_path` maps the root to the server's view. Token from `PLEX_TOKEN`, sent as a header (never in the URL). Failures only warn: the files are already in place. Tested with mocks only (no Plex server here).

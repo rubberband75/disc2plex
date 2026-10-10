@@ -1,21 +1,30 @@
 """Glue for the full scan -> classify -> TMDB -> match -> plan pipeline.
 
-Shared by the ``plan`` and (later) ``apply`` commands. Side effects come only
+Shared by the ``plan`` and ``apply`` commands. Side effects come only
 from the injected scanner, TMDB client, and ``exists`` check.
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from disc2plex.classify import classify
-from disc2plex.match.combine import Thresholds, decide
+from disc2plex.match.combine import Thresholds, apply_overrides, decide
 from disc2plex.match.content import ContentVerifier, VerifyMode, apply_evidence
 from disc2plex.match.heuristic import ContentVotes, match_heuristic
-from disc2plex.models import ClassifyResult, MatchResult, Plan, ScanResult, SeasonEpisodes, ShowInfo
+from disc2plex.models import (
+    ClassifyResult,
+    EpisodeInfo,
+    MatchResult,
+    MediaFile,
+    Plan,
+    ScanResult,
+    SeasonEpisodes,
+    ShowInfo,
+)
 from disc2plex.plan import PlanOptions, build_plan
 from disc2plex.tmdb import (
     TMDBClient,
@@ -39,6 +48,54 @@ def parse_disc_range(text: str) -> tuple[int, int]:
     if start < 1 or end < start:
         raise ValueError(f"invalid episode range {text!r}")
     return start, end
+
+
+def parse_assign(text: str) -> tuple[str, tuple[int, ...]]:
+    """Parse ``"t04=6"`` or ``"title_t00.mkv=1-2"`` into (file spec, episode numbers)."""
+    spec, sep, episodes = text.rpartition("=")
+    if not sep or not spec.strip():
+        raise ValueError(f"expected FILE=EPISODES like t04=6 or t00=1-2, got {text!r}")
+    episodes = episodes.strip().lower().removeprefix("e").replace("-e", "-")
+    start, end = parse_disc_range(episodes)
+    return spec.strip(), tuple(range(start, end + 1))
+
+
+def _file_matches(spec: str, media: MediaFile) -> bool:
+    if spec in (media.path.name, media.path.stem):
+        return True
+    index = re.fullmatch(r"t?(\d+)", spec.lower())
+    return index is not None and media.makemkv_title_index == int(index.group(1))
+
+
+def resolve_overrides(
+    specs: Sequence[tuple[str, tuple[int, ...]]],
+    files: Sequence[MediaFile],
+    season: SeasonEpisodes,
+) -> dict[Path, tuple[EpisodeInfo, ...]]:
+    """Map ``--assign`` specs to files and episodes (aired numbers in ``season``)."""
+    by_number = {e.episode: e for e in season.episodes if e.season == season.season}
+    overrides: dict[Path, tuple[EpisodeInfo, ...]] = {}
+    claimed: dict[int, str] = {}
+    for spec, numbers in specs:
+        matches = [f for f in files if _file_matches(spec, f)]
+        if len(matches) != 1:
+            found = "no file" if not matches else f"{len(matches)} files"
+            raise ValueError(f"--assign {spec}: {found} on this disc match {spec!r}")
+        path = matches[0].path
+        if path in overrides:
+            raise ValueError(f"--assign: {path.name} is assigned twice")
+        missing = [n for n in numbers if n not in by_number]
+        if missing:
+            raise ValueError(
+                f"--assign {spec}: season {season.season} has no episode "
+                f"{', '.join(str(n) for n in missing)}"
+            )
+        for n in numbers:
+            if n in claimed:
+                raise ValueError(f"--assign: episode {n} is given to both {claimed[n]} and {spec}")
+            claimed[n] = spec
+        overrides[path] = tuple(by_number[n] for n in numbers)
+    return overrides
 
 
 def infer_season(show: ShowInfo) -> int:
@@ -66,6 +123,8 @@ class PlanRequest:
     verify: VerifyMode = VerifyMode.NONE
     options: PlanOptions = field(default_factory=PlanOptions)
     thresholds: Thresholds = field(default_factory=Thresholds)
+    # User-identified files from --assign: (file spec, aired episode numbers).
+    assign: tuple[tuple[str, tuple[int, ...]], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -104,21 +163,25 @@ def run_plan(
         season_runtimes_seconds=season_runtimes_seconds(season),
     )
 
+    overrides = resolve_overrides(request.assign, scan.files, season)
+
     def align(votes: ContentVotes | None = None) -> MatchResult:
-        return match_heuristic(
+        result = match_heuristic(
             classified.items,
             season,
             disc_range=request.disc_range,
             disc_number=request.disc,
             content_votes=votes,
         )
+        # Before verification too, so assigned files aren't sent for checking.
+        return apply_overrides(result, overrides)
 
     heuristic = align()
     if verifier is not None and request.verify is not VerifyMode.NONE:
         evidence = verifier.gather(heuristic, season, request.verify)
         if evidence.by_file:
             heuristic = align(evidence.votes(verifier.config.min_answer_confidence))
-        heuristic = apply_evidence(heuristic, evidence, verifier.config)
+        heuristic = apply_overrides(apply_evidence(heuristic, evidence, verifier.config), overrides)
     matched = decide(heuristic, request.thresholds)
     plan = build_plan(
         matched,
