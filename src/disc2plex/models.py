@@ -173,6 +173,74 @@ class SeasonEpisodes(_Frozen):
     episodes: tuple[EpisodeInfo, ...] = ()
 
 
+class AssignmentStatus(StrEnum):
+    CONFIDENT = "confident"
+    NEEDS_REVIEW = "needs_review"
+    UNMATCHED = "unmatched"
+
+
+class Assignment(_Frozen):
+    """The decision for one file: which episode(s) it is and how sure we are."""
+
+    file: MediaFile
+    file_class: FileClass
+    episodes: tuple[EpisodeInfo, ...] = ()
+    confidence: float = 0.0
+    status: AssignmentStatus = AssignmentStatus.UNMATCHED
+    # Named numeric signals that fed the confidence (e.g. "order", "runtime_fit").
+    signals: dict[str, float] = {}
+    reasons: tuple[str, ...] = ()
+
+    @property
+    def episode_label(self) -> str:
+        """``"s01e01"`` / ``"s01e01-e02"`` style label, or ``""`` if unassigned."""
+        if not self.episodes:
+            return ""
+        first, last = self.episodes[0], self.episodes[-1]
+        label = f"s{first.season:02d}e{first.episode:02d}"
+        if len(self.episodes) > 1:
+            label += (
+                f"-e{last.episode:02d}"
+                if last.season == first.season
+                else f"+s{last.season:02d}e{last.episode:02d}"
+            )
+        return label
+
+
+class MatchResult(_Frozen):
+    assignments: tuple[Assignment, ...] = ()
+    # 1-based position (in the chosen order) of the first episode on the disc.
+    start_position: int | None = None
+    start_source: str | None = None  # "range", "disc1", "inferred"
+    notes: tuple[str, ...] = ()
+
+
+class PlanAction(StrEnum):
+    MOVE = "move"
+    HARDLINK = "hardlink"
+    COPY = "copy"
+    SKIP = "skip"
+
+
+class PlanItem(_Frozen):
+    source: Path
+    destination: Path | None
+    action: PlanAction
+    reason: str
+    file_class: FileClass
+    status: AssignmentStatus
+    confidence: float = 0.0
+    episode_label: str = ""
+
+
+class Plan(_Frozen):
+    output_root: Path
+    items: tuple[PlanItem, ...] = ()
+    # Errors block apply (e.g. two files mapping to one destination).
+    errors: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
+
+
 class ScanFailure(_Frozen):
     """A file that could not be probed (corrupt, truncated, not really video...)."""
 

@@ -20,17 +20,25 @@ cp .env.example .env     # then fill in TMDB_API_TOKEN (the "API Read Access Tok
 uv run disc2plex --help
 ```
 
-## Usage (planned)
+## Usage
+
+`scan`, `plan`, and the `tmdb` helpers work today; `apply` and `undo` are coming next.
 
 ```bash
 disc2plex scan ./sample_rip
-disc2plex plan ./sample_rip --show "Show Name" --season 1 --disc-episodes 1-4
+disc2plex plan ./sample_rip --show "Show Name" --season 1 --disc-episodes 1-4 --output "/srv/plex/TV Shows"
+disc2plex plan ./FIREFLY_D1 --show Firefly --disc 1 --order dvd --output "/srv/plex/TV Shows"
 disc2plex apply ./sample_rip --show "Show Name" --season 1 --apply
 disc2plex undo manifests/<run>.json
 disc2plex tmdb search "Show Name"
 disc2plex tmdb show 1437                 # seasons and episode groups (DVD order IDs)
 disc2plex tmdb season 1437 1 --order dvd
 ```
+
+`plan` is always a dry run. It prints where each file would go, how confident the
+match is, and the evidence behind it. Files it isn't confident about are routed to
+`<output>/_review/<disc>/` rather than guessed. Pinning the disc position with
+`--disc-episodes` (or `--disc 1`) makes matches much more confident.
 
 ## Development
 

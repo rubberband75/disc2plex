@@ -137,7 +137,7 @@ def parse_probe(path: Path, size_bytes: int, data: ProbeData) -> MediaFile:
     )
 
 
-def _sort_key(path: Path) -> tuple[int, int, str]:
+def title_sort_key(path: Path) -> tuple[int, int, str]:
     """Order by MakeMKV title index when present, then by name."""
     index = parse_title_index(path)
     return (0 if index is not None else 1, index or 0, path.name.lower())
@@ -150,7 +150,7 @@ def find_mkv_files(rip_dir: Path, *, recursive: bool = False) -> list[Path]:
     """List ``.mkv`` files in ``rip_dir`` (case-insensitive), sorted by title index."""
     pattern = "**/*" if recursive else "*"
     files = [p for p in rip_dir.glob(pattern) if p.is_file() and p.suffix.lower() == ".mkv"]
-    return sorted(files, key=_sort_key)
+    return sorted(files, key=title_sort_key)
 
 
 def _summarize_stderr(stderr: str, path: Path) -> str:

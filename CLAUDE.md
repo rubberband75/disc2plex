@@ -199,7 +199,7 @@ Only run for files that are low-confidence, ambiguous, or when `--verify all` is
 
 ```
 disc2plex scan   <rip_dir>                       # show probed files + classification
-disc2plex plan   <rip_dir> --show "Name" [opts]  # full pipeline, dry-run, print plan
+disc2plex plan   <rip_dir> --show "Name" --output <library> [opts]  # full pipeline, dry-run
 disc2plex apply  <rip_dir> --show "Name" [opts]  # same as plan, then execute
 disc2plex undo   <manifest.json>                 # reverse a previous apply
 disc2plex tmdb   search "Show Name"              # helper to find TMDB IDs
@@ -278,7 +278,7 @@ uv run mypy              # strict mode, configured for src/ in pyproject.toml
 
 # try it (safe)
 uv run disc2plex scan ./sample_rip
-uv run disc2plex plan ./sample_rip --show "Show Name" --season 1 --disc-episodes 1-4
+uv run disc2plex plan ./sample_rip --show "Show Name" --season 1 --disc-episodes 1-4 --output /tmp/fake-library
 ```
 
 ---
@@ -365,5 +365,12 @@ When starting, ask the user about these and record answers in this file:
   - Group sub-season selection: a name match ("Season N"/"Series N"/"Volume N"), "Specials" for season 0, else the Nth non-special sub-group by `order`.
   - `ShowInfo` holds season summaries + episode groups; episode lists are fetched per season on demand (not all seasons up front).
   - Extra debug commands: `tmdb show <id>` (seasons + episode-group IDs) and `tmdb season <id> <n> [--order]`.
+- 2026-10-10: Milestone 6 (heuristic matching + `plan`) done: the first end-to-end dry run. Tested with synthetic rips, generated MKVs, and fixture-backed TMDB; not yet against a real rip or live TMDB.
+  - Pipeline glue lives in `pipeline.py` (`PlanRequest` -> `run_plan` -> `PlanRun`), shared by `plan` and the upcoming `apply`; `cli.py` only parses, prompts, and prints.
+  - Matching (`match/heuristic.py`): DP aligns EPISODE files (title order) to a contiguous run of episode positions. Pair score = log Gaussian runtime fit (sigma 15%); a double-length file may take 2 episodes (small single-episode prior); mid-run skips and unmatched files are penalised. `--disc-episodes A-B` (positions in the chosen order) pins the run; `--disc 1` pins the start at position 1; otherwise every start is tried and the score margin over the next-best start sets the order confidence (0.5 to 0.9). Per-file confidence = order confidence x runtime agreement; gaps cap it at 0.8. Out-of-order titles are not reordered (that needs content matching, M9): misfits are left unmatched and go to review.
+  - `MatchCandidate` from section 6 is deferred to M9; `Assignment.signals` carries the per-signal numbers for now.
+  - Classification now also receives the season's individual TMDB runtimes: a "suspected Play-All" or odd-length title matching a specific TMDB episode runtime (±5%) is treated as an episode (e.g. an 86-min pilot). Play-All size confirmation tightened to size ±1% AND duration ±1%, because same-show episodes have similar bitrates and looser size matches happen by chance.
+  - Plan routing: confident episodes -> library; needs-review/unmatched/unknown -> `<output>/_review/<disc>/`; extras -> `<output>/_extras_review/<disc>/` (`--extras skip` leaves them; `season0` falls back to review until M9); Play-All/junk/unprobeable -> left in place. Duplicate destinations are plan errors (exit 1). Existing destinations become `skip`. Multi-episode files whose episodes aren't consecutive in aired numbering (possible with DVD order) go to review.
+  - `plan` requires `--output` (until the config file exists in M10) and `--show` or `--tmdb-id`; an ambiguous show triggers a numbered prompt on a TTY, or an error listing candidates with `--yes`/`--json`/non-TTY.
 
 

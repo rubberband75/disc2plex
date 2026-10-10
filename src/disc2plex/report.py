@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 from rich.console import Console
 from rich.table import Table
 
 from disc2plex.models import (
+    AssignmentStatus,
     ClassifyResult,
     FileClass,
     MediaFile,
@@ -16,6 +19,10 @@ from disc2plex.models import (
     ShowInfo,
     ShowSummary,
 )
+
+if TYPE_CHECKING:
+    # Type-only: pipeline imports classify, which imports this module.
+    from disc2plex.pipeline import PlanRun
 
 
 def format_duration(seconds: float) -> str:
@@ -171,3 +178,91 @@ def render_season(season: SeasonEpisodes, console: Console) -> None:
             e.air_date.isoformat() if e.air_date else "-",
         )
     console.print(table)
+
+
+_STATUS_STYLES = {
+    AssignmentStatus.CONFIDENT: "green",
+    AssignmentStatus.NEEDS_REVIEW: "yellow",
+    AssignmentStatus.UNMATCHED: "red",
+}
+
+
+def _relative(path: Path | None, root: Path) -> str:
+    if path is None:
+        return "-"
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
+
+
+def render_plan(run: PlanRun, console: Console, *, show_evidence: bool = True) -> None:
+    """Print the plan: header, warnings/errors, the move table, and per-file evidence."""
+    show, plan = run.show, run.plan
+    console.print(f"[bold]{show.name}[/bold] ({show.year or '?'})  tmdb-{show.tmdb_id}")
+    console.print(f"{run.season.label}: {len(run.season.episodes)} episodes on TMDB")
+    if run.match.start_position is not None:
+        console.print(
+            f"Disc starts at position {run.match.start_position} ({run.match.start_source})"
+        )
+    if run.classified.reference_seconds is not None:
+        console.print(
+            f"Typical episode length: {format_duration(run.classified.reference_seconds)}"
+        )
+    console.print(f"Output root: {plan.output_root}")
+    console.print("[dim]Dry run: nothing has been moved.[/dim]")
+
+    table = Table(title="Plan")
+    table.add_column("Source")
+    table.add_column("Class")
+    table.add_column("Episode")
+    table.add_column("Conf", justify="right")
+    table.add_column("Status")
+    table.add_column("Action")
+    table.add_column("Destination (relative to output root)")
+    for item in plan.items:
+        status_style = _STATUS_STYLES[item.status]
+        is_episode = item.file_class is FileClass.EPISODE
+        table.add_row(
+            item.source.name,
+            f"[{_CLASS_STYLES[item.file_class]}]{item.file_class.value}[/]",
+            item.episode_label or "-",
+            f"{item.confidence:.0%}" if is_episode else "-",
+            f"[{status_style}]{item.status.value}[/]" if is_episode else "-",
+            item.action.value,
+            _relative(item.destination, plan.output_root),
+        )
+    console.print(table)
+
+    if show_evidence:
+        console.print("[bold]Evidence[/bold]")
+        for a in run.match.assignments:
+            label = f" -> {a.episode_label}" if a.episode_label else ""
+            console.print(f"  {a.file.path.name}{label}")
+            for reason in a.reasons:
+                console.print(f"      [dim]- {reason}[/dim]")
+
+    for warning in plan.warnings:
+        console.print(f"[yellow]Warning:[/yellow] {warning}")
+    for error in plan.errors:
+        console.print(f"[red]Error:[/red] {error}")
+    if plan.errors:
+        console.print("[red]Plan has errors; it cannot be applied until they are resolved.[/red]")
+
+
+def plan_to_json(run: PlanRun) -> str:
+    """Serialize a plan run (plan + assignments) for ``--json`` output."""
+    payload = {
+        "show": run.show.model_dump(mode="json"),
+        "season": {
+            "number": run.season.season,
+            "order": run.season.order,
+            "label": run.season.label,
+        },
+        "start_position": run.match.start_position,
+        "start_source": run.match.start_source,
+        "reference_seconds": run.classified.reference_seconds,
+        "assignments": [a.model_dump(mode="json") for a in run.match.assignments],
+        "plan": run.plan.model_dump(mode="json"),
+    }
+    return json.dumps(payload, indent=2)

@@ -37,7 +37,11 @@ class ClassifyConfig:
     duplicate_size_tolerance: float = 0.005
     duplicate_chapter_seconds: float = 0.5
     play_all_duration_tolerance: float = 0.025
-    play_all_size_tolerance: float = 0.03
+    # Size confirmation: a real Play-All reuses the same video, so both size and
+    # duration match closely. Looser size matches happen by chance between
+    # episodes of the same show (similar bitrates), so they are not evidence.
+    play_all_size_tolerance: float = 0.01
+    play_all_strict_duration_tolerance: float = 0.01
     chapter_match_seconds: float = 3.0
     # Fraction of component boundaries that must have a nearby chapter mark.
     chapter_match_fraction: float = 0.75
@@ -50,6 +54,8 @@ class ClassifyConfig:
     extra_max_ratio: float = 0.5
     # Without any reference length, files shorter than this are called extras.
     no_reference_extra_seconds: float = 300.0
+    # How close a file must be to a specific TMDB episode runtime to count as that length.
+    season_runtime_tolerance: float = 0.05
 
 
 # 6! = 720 orderings is cheap; beyond that only title order is checked.
@@ -229,12 +235,12 @@ def _mark_play_all(verdicts: list[_Verdict], cfg: ClassifyConfig) -> None:
             candidate.size_bytes,
             sum(c.size_bytes for c in components),
             cfg.play_all_size_tolerance,
-        )
+        ) and _within(candidate.duration_seconds, total, cfg.play_all_strict_duration_tolerance)
         if size_match or _chapters_align(candidate, components, cfg):
             v.play_all_of = paths
             v.decide(FileClass.PLAY_ALL, summary)
             v.note(
-                "total file size also matches"
+                "total file size also matches (same video)"
                 if size_match
                 else "chapter marks line up with title boundaries"
             )
@@ -251,14 +257,27 @@ def _mark_play_all(verdicts: list[_Verdict], cfg: ClassifyConfig) -> None:
 # --- pass 3: reference length -------------------------------------------------
 
 
+def _matching_season_runtime(
+    duration: float, season_runtimes: Sequence[float], cfg: ClassifyConfig
+) -> float | None:
+    """The TMDB episode runtime (seconds) this duration matches, if any."""
+    close = [r for r in season_runtimes if _within(duration, r, cfg.season_runtime_tolerance)]
+    return min(close, key=lambda r: abs(r - duration)) if close else None
+
+
 def _find_reference(
-    files: Sequence[MediaFile], expected_seconds: float | None, cfg: ClassifyConfig
+    files: Sequence[MediaFile],
+    expected_seconds: float | None,
+    season_runtimes: Sequence[float],
+    cfg: ClassifyConfig,
 ) -> tuple[float | None, str | None, list[str]]:
     """Pick the typical single-episode length.
 
     Candidate clusters are files within ``cluster_tolerance`` of some centre file.
     With an expected runtime, the multi-file cluster nearest to it wins (TMDB
-    runtimes are rounded, so the observed median is preferred when close).
+    runtimes are rounded, so the observed median is preferred when close). A
+    cluster matching some specific episode runtime of the season also counts,
+    so a disc of short episodes in a mixed-length season is still recognised.
     Without one, the largest cluster of files >= ``min_cluster_seconds`` wins,
     ties broken by total duration.
     """
@@ -283,6 +302,7 @@ def _find_reference(
             c
             for c in clusters
             if _within(statistics.median(c), expected_seconds, 2 * cfg.episode_tolerance)
+            or _matching_season_runtime(statistics.median(c), season_runtimes, cfg)
         ]
         if near:
             best = min(near, key=lambda c: (abs(statistics.median(c) - expected_seconds), -len(c)))
@@ -307,8 +327,11 @@ def _find_reference(
 # --- pass 4: ratio bands ------------------------------------------------------
 
 
-def _classify_by_ratio(v: _Verdict, reference: float | None, cfg: ClassifyConfig) -> None:
+def _classify_by_ratio(
+    v: _Verdict, reference: float | None, season_runtimes: Sequence[float], cfg: ClassifyConfig
+) -> None:
     duration = v.file.duration_seconds
+    tmdb_match = _matching_season_runtime(duration, season_runtimes, cfg)
     if reference is None:
         if duration < cfg.no_reference_extra_seconds:
             v.decide(
@@ -321,7 +344,15 @@ def _classify_by_ratio(v: _Verdict, reference: float | None, cfg: ClassifyConfig
 
     ratio = duration / reference
     ref_text = format_duration(reference)
-    if v.suspected_play_all_of:
+    if tmdb_match and (v.suspected_play_all_of or not _within(ratio, 1.0, cfg.episode_tolerance)):
+        # e.g. an 86-minute pilot: TMDB lists a single episode of this length,
+        # which beats a coincidental "two episodes summed" Play-All match.
+        v.suspected_play_all_of = ()
+        v.decide(
+            FileClass.EPISODE,
+            f"{ratio:.2f}x typical length, but matches a {tmdb_match / 60:g}-min episode on TMDB",
+        )
+    elif v.suspected_play_all_of:
         # Includes the classic ambiguity: a 2x title equal to two episodes
         # could be a two-episode Play-All or a genuine double-length episode.
         v.decide(FileClass.UNKNOWN, f"{ratio:.2f}x episode length; Play-All or long episode?")
@@ -352,13 +383,16 @@ def classify(
     files: Sequence[MediaFile],
     *,
     expected_runtime_seconds: float | None = None,
+    season_runtimes_seconds: Sequence[float] = (),
     config: ClassifyConfig | None = None,
 ) -> ClassifyResult:
     """Classify every file from one disc.
 
     ``expected_runtime_seconds`` is the typical episode runtime (e.g. the median
     TMDB runtime for the season); it helps on discs with few episodes and on
-    shows with unusually short or long episodes.
+    shows with unusually short or long episodes. ``season_runtimes_seconds``
+    lists individual TMDB episode runtimes, letting unusual lengths (a long
+    pilot, a short episode) be recognised as episodes.
     """
     cfg = config or ClassifyConfig()
     verdicts = [_Verdict(file=f) for f in files]
@@ -370,10 +404,11 @@ def classify(
     reference, source, notes = _find_reference(
         [v.file for v in remaining if not v.suspected_play_all_of],
         expected_runtime_seconds,
+        season_runtimes_seconds,
         cfg,
     )
     for v in remaining:
-        _classify_by_ratio(v, reference, cfg)
+        _classify_by_ratio(v, reference, season_runtimes_seconds, cfg)
 
     items = []
     for v in verdicts:

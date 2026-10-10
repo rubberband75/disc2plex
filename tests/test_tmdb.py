@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from pathlib import Path
 
@@ -10,7 +9,7 @@ import httpx
 import pytest
 from typer.testing import CliRunner
 
-from conftest import FIXTURES
+from conftest import DVD_GROUP, FAKE_TOKEN, PROD_GROUP, FakeTMDB, tmdb_fixture
 from disc2plex import cli
 from disc2plex.models import EpisodeInfo, SeasonEpisodes, ShowInfo, ShowSummary
 from disc2plex.tmdb import (
@@ -27,57 +26,6 @@ from disc2plex.tmdb import (
     season_episodes,
     select_group_season,
 )
-
-DVD_GROUP = "5b0c3a5c0e0a267b7a00a1f1"
-PROD_GROUP = "5c1d2e3f4a5b6c7d8e9f0a1b"
-FAKE_TOKEN = "eyJhbGciOiJIUzI1NiJ9.fake-test-token"
-
-
-def tmdb_fixture(name: str) -> dict[str, object]:
-    data: dict[str, object] = json.loads((FIXTURES / "tmdb" / f"{name}.json").read_text())
-    return data
-
-
-ROUTES = {
-    "/3/search/tv": "search_firefly",
-    "/3/tv/1437": "tv_1437",
-    "/3/tv/1437/episode_groups": "tv_1437_episode_groups",
-    "/3/tv/1437/season/1": "tv_1437_season_1",
-    f"/3/tv/episode_group/{DVD_GROUP}": "episode_group_dvd",
-}
-
-
-class FakeTMDB:
-    """Records requests and serves fixtures by URL path."""
-
-    def __init__(self, routes: dict[str, str] | None = None) -> None:
-        self.routes = dict(ROUTES if routes is None else routes)
-        self.requests: list[httpx.Request] = []
-        self.responses: dict[str, list[httpx.Response]] = {}
-
-    def handler(self, request: httpx.Request) -> httpx.Response:
-        self.requests.append(request)
-        path = request.url.path
-        if queued := self.responses.get(path):
-            return queued.pop(0)
-        if path == "/3/search/tv" and request.url.params.get("query") == "Doctor Who":
-            return httpx.Response(200, json=tmdb_fixture("search_doctor_who"))
-        if path in self.routes:
-            return httpx.Response(200, json=tmdb_fixture(self.routes[path]))
-        return httpx.Response(404, json={"status_message": "not found"})
-
-    def client(self, cache: TMDBCache | None = None, token: str = FAKE_TOKEN) -> TMDBClient:
-        return TMDBClient(
-            token, cache=cache, transport=httpx.MockTransport(self.handler), sleep=lambda _s: None
-        )
-
-    def paths(self) -> list[str]:
-        return [r.url.path for r in self.requests]
-
-
-@pytest.fixture
-def fake() -> FakeTMDB:
-    return FakeTMDB()
 
 
 @pytest.fixture

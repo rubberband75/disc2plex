@@ -1,7 +1,8 @@
 """Typer entry point for the ``disc2plex`` command.
 
 Commands not yet implemented are declared so ``--help`` documents the intended
-interface; they exit with a "not implemented" message.
+interface; they exit with a "not implemented" message. Pipeline logic lives in
+``pipeline.py``; this module only parses options, prompts, and prints.
 """
 
 from __future__ import annotations
@@ -9,8 +10,10 @@ from __future__ import annotations
 import logging
 import os
 import shutil
-from collections.abc import Iterator
+import sys
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from dataclasses import replace
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
@@ -21,7 +24,12 @@ from rich.console import Console
 from disc2plex import __version__
 from disc2plex.classify import classify
 from disc2plex.config import load_dotenv
+from disc2plex.models import PlanAction, ScanResult, ShowSummary
+from disc2plex.pipeline import PlanRequest, PlanRun, parse_disc_range, run_plan
+from disc2plex.plan import ExtrasMode, PlanOptions
 from disc2plex.report import (
+    plan_to_json,
+    render_plan,
     render_scan,
     render_search_results,
     render_season,
@@ -30,6 +38,7 @@ from disc2plex.report import (
 )
 from disc2plex.scan import ProbeCache, default_cache_path, scan_directory
 from disc2plex.tmdb import (
+    AmbiguousShowError,
     TMDBCache,
     TMDBClient,
     TMDBError,
@@ -63,12 +72,6 @@ class FileAction(StrEnum):
     COPY = "copy"
 
 
-class ExtrasMode(StrEnum):
-    REVIEW = "review"
-    SEASON0 = "season0"
-    SKIP = "skip"
-
-
 # Shared option types so `plan` and `apply` stay in sync.
 RipDir = Annotated[
     Path,
@@ -76,14 +79,17 @@ RipDir = Annotated[
         exists=True, file_okay=False, dir_okay=True, help="Folder of .mkv files from one disc."
     ),
 ]
-ShowOpt = Annotated[str, typer.Option("--show", help="Show name to look up on TMDB.")]
+ShowOpt = Annotated[str | None, typer.Option("--show", help="Show name to look up on TMDB.")]
 YearOpt = Annotated[int | None, typer.Option("--year", help="Show's first-air year.")]
 TmdbIdOpt = Annotated[int | None, typer.Option("--tmdb-id", help="TMDB show ID (skips search).")]
 SeasonOpt = Annotated[int | None, typer.Option("--season", help="Season number on this disc.")]
 DiscOpt = Annotated[int | None, typer.Option("--disc", help="Disc number within the season.")]
 DiscEpisodesOpt = Annotated[
     str | None,
-    typer.Option("--disc-episodes", help="Episode range on this disc, e.g. 1-4."),
+    typer.Option(
+        "--disc-episodes",
+        help="Episode positions on this disc in the chosen order, e.g. 1-4.",
+    ),
 ]
 OrderOpt = Annotated[
     str, typer.Option("--order", help="Episode order: aired, dvd, or a TMDB episode-group ID.")
@@ -185,10 +191,87 @@ def scan(
         render_scan(result, classified, Console())
 
 
+def _fail(message: str) -> typer.Exit:
+    typer.secho(f"Error: {message}", err=True, fg=typer.colors.RED)
+    return typer.Exit(code=1)
+
+
+def _plan_request(
+    rip_dir: Path,
+    output: Path | None,
+    show: str | None,
+    year: int | None,
+    tmdb_id: int | None,
+    season: int | None,
+    disc: int | None,
+    disc_episodes: str | None,
+    order: str,
+    action: FileAction,
+    include_titles: bool,
+    extras: ExtrasMode,
+) -> PlanRequest:
+    if output is None:
+        raise _fail("--output is required (your Plex TV library root)")
+    if show is None and tmdb_id is None:
+        raise _fail("pass --show NAME or --tmdb-id ID")
+    try:
+        disc_range = parse_disc_range(disc_episodes) if disc_episodes else None
+    except ValueError as exc:
+        raise _fail(f"--disc-episodes: {exc}") from exc
+    return PlanRequest(
+        rip_dir=rip_dir.resolve(),
+        output_root=output.expanduser().resolve(),
+        show_name=show,
+        year=year,
+        tmdb_id=tmdb_id,
+        season=season,
+        disc=disc,
+        disc_range=disc_range,
+        order=order,
+        options=PlanOptions(
+            action=PlanAction(action.value), include_titles=include_titles, extras=extras
+        ),
+    )
+
+
+def _stdin_is_terminal() -> bool:
+    return sys.stdin.isatty()
+
+
+def _prompt_for_show(candidates: Sequence[ShowSummary]) -> int:
+    console = Console()
+    console.print("Several shows match. Which one?")
+    for number, c in enumerate(candidates, start=1):
+        console.print(f"  {number}. {c.name} ({c.year or '?'})  tmdb-{c.tmdb_id}")
+    while True:
+        choice: int = typer.prompt("Number", type=int)
+        if 1 <= choice <= len(candidates):
+            return candidates[choice - 1].tmdb_id
+        console.print(f"Enter a number from 1 to {len(candidates)}.")
+
+
+def _run_pipeline(request: PlanRequest, *, interactive: bool) -> PlanRun:
+    cache = ProbeCache(default_cache_path())
+
+    def scanner(rip_dir: Path) -> ScanResult:
+        return scan_directory(rip_dir, cache=cache)
+
+    with tmdb_session() as client:
+        try:
+            return run_plan(request, scanner=scanner, client=client, exists=Path.exists)
+        except AmbiguousShowError as exc:
+            if not interactive:
+                raise
+            chosen = replace(request, tmdb_id=_prompt_for_show(exc.candidates))
+            return run_plan(chosen, scanner=scanner, client=client, exists=Path.exists)
+        except ValueError as exc:  # e.g. --disc-episodes outside the season
+            raise _fail(str(exc)) from exc
+
+
 @app.command()
 def plan(
     rip_dir: RipDir,
-    show: ShowOpt,
+    show: ShowOpt = None,
     year: YearOpt = None,
     tmdb_id: TmdbIdOpt = None,
     season: SeasonOpt = None,
@@ -208,13 +291,31 @@ def plan(
 ) -> None:
     """Run the full pipeline and print the rename plan (always a dry run)."""
     require_ffprobe()
-    _not_implemented(6)
+    request = _plan_request(
+        rip_dir, output, show, year, tmdb_id, season, disc, disc_episodes, order,
+        action, include_titles, extras,
+    )  # fmt: skip
+    if verify is not VerifyMode.NONE and not json_out:
+        typer.secho(
+            "Note: content verification isn't available yet; matching uses title order "
+            "and runtimes only.",
+            err=True,
+            dim=True,
+        )
+    interactive = not yes and not json_out and _stdin_is_terminal()
+    run = _run_pipeline(request, interactive=interactive)
+    if json_out:
+        typer.echo(plan_to_json(run))
+    else:
+        render_plan(run, Console())
+    if run.plan.errors:
+        raise typer.Exit(code=1)
 
 
 @app.command()
 def apply(
     rip_dir: RipDir,
-    show: ShowOpt,
+    show: ShowOpt = None,
     year: YearOpt = None,
     tmdb_id: TmdbIdOpt = None,
     season: SeasonOpt = None,

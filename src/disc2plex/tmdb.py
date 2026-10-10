@@ -277,6 +277,11 @@ def expected_runtime_seconds(season: SeasonEpisodes) -> float | None:
     return None
 
 
+def season_runtimes_seconds(season: SeasonEpisodes) -> list[float]:
+    """Distinct per-episode TMDB runtimes for the season, in seconds."""
+    return sorted({e.runtime_minutes * 60 for e in season.episodes if e.runtime_minutes})
+
+
 # --- client -------------------------------------------------------------------
 
 
