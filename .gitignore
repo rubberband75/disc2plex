@@ -1,5 +1,6 @@
 # Secrets
 .env
+.device-info
 
 # Python
 __pycache__/
@@ -21,3 +22,4 @@ manifests/
 *.mp4
 *.m2ts
 *.iso
+inputs/

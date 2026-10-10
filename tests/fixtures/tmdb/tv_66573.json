@@ -1,0 +1,36 @@
+{
+ "id": 66573,
+ "name": "The Good Place",
+ "original_name": "The Good Place",
+ "first_air_date": "2016-09-19",
+ "episode_run_time": [
+  22
+ ],
+ "seasons": [
+  {
+   "season_number": 0,
+   "name": "Specials",
+   "episode_count": 8
+  },
+  {
+   "season_number": 1,
+   "name": "Season 1",
+   "episode_count": 13
+  },
+  {
+   "season_number": 2,
+   "name": "Season 2",
+   "episode_count": 12
+  },
+  {
+   "season_number": 3,
+   "name": "Season 3",
+   "episode_count": 12
+  },
+  {
+   "season_number": 4,
+   "name": "Season 4",
+   "episode_count": 13
+  }
+ ]
+}

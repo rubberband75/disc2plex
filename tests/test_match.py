@@ -108,6 +108,24 @@ def test_disc_range_outside_season_raises() -> None:
         run(files, season, disc_range=(3, 6))
 
 
+def test_disc_running_longer_than_tmdb_is_calibrated() -> None:
+    # Modelled on a real Blu-ray: TMDB says 22 min, the disc's episodes run 22.5-26.5.
+    season = make_season([23, 22, 22, 22, 22, 22, 22, 22])
+    files = [
+        make_media(f"t{i:02d}.mkv", m) for i, m in enumerate([42.7, 24.9, 22.6, 26.3, 26.4, 24.3])
+    ]
+    result = run(files, season, disc_number=1)
+    assert labels(result)["t00.mkv"] == "s01e01-e02"
+    assert labels(result)["t05.mkv"] == "s01e07"
+    # Single episodes are confident; the merged pilot (shorter than 2x, as
+    # two-episode files drop a set of credits) is labelled right but may need review.
+    assert {statuses(result)[f"t{i:02d}.mkv"] for i in range(1, 6)} == {CONFIDENT}
+    assert statuses(result)["t00.mkv"] is not UNMATCHED
+    assert any("runtimes were scaled" in n for n in result.notes)
+    singles = [a for a in result.assignments if a.file.path.name != "t00.mkv"]
+    assert not any("mismatch" in r for a in singles for r in a.reasons)
+
+
 # --- double-length / two-part -------------------------------------------------
 
 

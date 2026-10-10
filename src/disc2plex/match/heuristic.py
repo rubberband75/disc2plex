@@ -16,8 +16,9 @@ episodes all run 44 minutes honestly comes out as needing review.
 from __future__ import annotations
 
 import math
+import statistics
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from disc2plex.models import (
     Assignment,
@@ -53,6 +54,16 @@ class HeuristicConfig:
     inferred_margin_scale: float = 1.5
     # Confidence ceiling when the run has gaps or doesn't fill the given range.
     gap_confidence_cap: float = 0.80
+    # Multiplier applied to TMDB runtimes before comparing. Set per disc by
+    # calibration (real discs often run 5-20% longer than TMDB's broadcast
+    # runtimes), clamped to this range so a wrong season can't be "fixed" by it.
+    runtime_scale: float = 1.0
+    min_runtime_scale: float = 0.80
+    max_runtime_scale: float = 1.35
+
+
+# Runtime fit below this (about 17% off with the default sigma) is called a mismatch.
+MISMATCH_FIT = 0.3
 
 
 @dataclass
@@ -74,7 +85,7 @@ def runtime_fit(
     runtimes = [e.runtime_minutes for e in episodes]
     if any(r is None for r in runtimes):
         return None
-    expected = sum(r for r in runtimes if r is not None) * 60
+    expected = sum(r for r in runtimes if r is not None) * 60 * cfg.runtime_scale
     relative_error = abs(duration_seconds - expected) / expected
     return math.exp(-((relative_error / cfg.runtime_sigma) ** 2))
 
@@ -159,15 +170,44 @@ def _runtime_factor(fit: float | None) -> float:
     return min(1.0, 0.4 + (0.55 if fit is None else fit))
 
 
-def _describe_runtime(file: MediaFile, eps: Sequence[EpisodeInfo], fit: float | None) -> str:
+def calibrate_runtime_scale(
+    items: Sequence[Classification], episodes: Sequence[EpisodeInfo], cfg: HeuristicConfig
+) -> float:
+    """How much longer (or shorter) this disc's episodes run than TMDB says.
+
+    Each single-episode file is compared with the nearest TMDB runtime in the
+    season (so a disc of atypical-length episodes still calibrates correctly);
+    the median ratio is the scale. Needs two files and some runtimes, else 1.0.
+    """
+    runtimes = sorted({e.runtime_minutes * 60 for e in episodes if e.runtime_minutes})
+    ratios = (
+        [
+            i.file.duration_seconds / min(runtimes, key=lambda r: abs(r - i.file.duration_seconds))
+            for i in items
+            if i.episode_count_hint == 1
+        ]
+        if runtimes
+        else []
+    )
+    if len(ratios) < 2:
+        return 1.0
+    return min(max(statistics.median(ratios), cfg.min_runtime_scale), cfg.max_runtime_scale)
+
+
+def _describe_runtime(
+    file: MediaFile, eps: Sequence[EpisodeInfo], fit: float | None, cfg: HeuristicConfig
+) -> str:
     actual = format_duration(file.duration_seconds)
     if fit is None:
         return f"runtime {actual}; TMDB lists no runtime to compare"
-    expected = sum(e.runtime_minutes or 0 for e in eps)
-    off = abs(file.duration_seconds - expected * 60) / (expected * 60)
+    expected = sum(e.runtime_minutes or 0 for e in eps) * 60 * cfg.runtime_scale
+    off = abs(file.duration_seconds - expected) / expected
     parts = " + ".join(f"{e.runtime_minutes:g}" for e in eps)
-    verdict = "matches" if fit >= 0.6 else "differs from"
-    return f"runtime {actual} {verdict} TMDB {parts} min ({off:.0%} off)"
+    scaled = f" x{cfg.runtime_scale:.2f}" if abs(cfg.runtime_scale - 1) >= 0.01 else ""
+    verdict = (
+        "matches" if fit >= 0.6 else "roughly matches" if fit >= MISMATCH_FIT else "differs from"
+    )
+    return f"runtime {actual} {verdict} TMDB {parts} min{scaled} ({off:.0%} off)"
 
 
 def match_heuristic(
@@ -220,6 +260,13 @@ def match_heuristic(
         starts, end, source = list(range(n)), n, "inferred"
         pinned_conf = None
 
+    scale = calibrate_runtime_scale(items, episodes, cfg)
+    cfg = replace(cfg, runtime_scale=scale)
+    if abs(scale - 1) >= 0.05:
+        notes.append(
+            f"this disc's episodes run {scale:.2f}x TMDB's listed runtimes; "
+            "runtimes were scaled before comparing"
+        )
     paths = {s: _align(items, episodes, s, end, cfg) for s in starts}
     best_start = max(paths, key=lambda s: paths[s].score)
     best = paths[best_start]
@@ -277,9 +324,9 @@ def match_heuristic(
         reasons = [
             f"title order -> position {span[0] + 1}" + (f"-{span[1]}" if len(eps) > 1 else ""),
             start_text,
-            _describe_runtime(item.file, eps, fit),
+            _describe_runtime(item.file, eps, fit, cfg),
         ]
-        if fit is not None and fit < 0.6:
+        if fit is not None and fit < MISMATCH_FIT:
             reasons.append("runtime mismatch: titles may be out of order or misclassified")
         if gap_reasons:
             confidence = min(confidence, cfg.gap_confidence_cap)

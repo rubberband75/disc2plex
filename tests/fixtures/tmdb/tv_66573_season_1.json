@@ -1,0 +1,135 @@
+{
+ "season_number": 1,
+ "episodes": [
+  {
+   "id": 1195668,
+   "season_number": 1,
+   "episode_number": 1,
+   "name": "Everything Is Fine",
+   "overview": "Newly-deceased Eleanor Shellstrop is sent to the Good Place, but only by mistake; Eleanor is determined to become a better person in her afterlife with help from friends Chidi and Janet; Eleanor tries to prove to Chidi that she's worthy of his help.",
+   "runtime": 23,
+   "air_date": "2016-09-19",
+   "order": null
+  },
+  {
+   "id": 1223504,
+   "season_number": 1,
+   "episode_number": 2,
+   "name": "Flying",
+   "overview": "Eleanor tries to prove to Chidi that she is worthy of his help. Meanwhile, Tahani and Jianyu try to help Michael feel better about the unknown flaw in his Neighborhood.",
+   "runtime": 22,
+   "air_date": "2016-09-19",
+   "order": null
+  },
+  {
+   "id": 1223505,
+   "season_number": 1,
+   "episode_number": 3,
+   "name": "Tahani Al-Jamil",
+   "overview": "Chidi begins formally teaching Eleanor about ethics, and lesson No. 1 is: be kind to your neighbor. Michael and Janet help Chidi find a new, exciting hobby.",
+   "runtime": 22,
+   "air_date": "2016-09-22",
+   "order": null
+  },
+  {
+   "id": 1223506,
+   "season_number": 1,
+   "episode_number": 4,
+   "name": "Jason Mendoza",
+   "overview": "Eleanor has a hard time remaining hidden.  Michael asks Tahani to assist a neighbor in finding her true purpose.",
+   "runtime": 22,
+   "air_date": "2016-09-29",
+   "order": null
+  },
+  {
+   "id": 1223507,
+   "season_number": 1,
+   "episode_number": 5,
+   "name": "Category 55 Emergency Doomsday Crisis",
+   "overview": "Eleanor's eagerness to learn ethics from Chidi becomes the full-time job he never wanted. Meanwhile, Michael and Janet focus their attention on a Neighborhood emergency.",
+   "runtime": 22,
+   "air_date": "2016-10-06",
+   "order": null
+  },
+  {
+   "id": 1223508,
+   "season_number": 1,
+   "episode_number": 6,
+   "name": "What We Owe to Each Other",
+   "overview": "Eleanor is enlisted to help Michael with an important task that could determine her fate in the Good Place. Meanwhile, Chidi agrees to be the third wheel in an effort to help out his friend.",
+   "runtime": 22,
+   "air_date": "2016-10-13",
+   "order": null
+  },
+  {
+   "id": 1223509,
+   "season_number": 1,
+   "episode_number": 7,
+   "name": "The Eternal Shriek",
+   "overview": "Eleanor puts Janet in her crosshairs to save Michael from eternal suffering.",
+   "runtime": 22,
+   "air_date": "2016-10-20",
+   "order": null
+  },
+  {
+   "id": 1223510,
+   "season_number": 1,
+   "episode_number": 8,
+   "name": "Most Improved Player",
+   "overview": "Michael has a private meeting with Eleanor, who is put to the test. Also, Chidi harbors a secret and mulls over what to do.",
+   "runtime": 22,
+   "air_date": "2016-10-27",
+   "order": null
+  },
+  {
+   "id": 1223511,
+   "season_number": 1,
+   "episode_number": 9,
+   "name": "...Someone Like Me as a Member",
+   "overview": "Michael faces a challenge when he tries to resolve an unprecedented situation. In addition, Chidi makes a connection, to Eleanor's chagrin, and a different side of Janet emerges.",
+   "runtime": 22,
+   "air_date": "2016-11-03",
+   "order": null
+  },
+  {
+   "id": 1238862,
+   "season_number": 1,
+   "episode_number": 10,
+   "name": "Chidi's Choice",
+   "overview": "Eleanor makes a surprising personal discovery. Meanwhile, Michael tasks an indecisive Chidi with coming to an important decision and Jianyu makes a big announcement.",
+   "runtime": 22,
+   "air_date": "2017-01-05",
+   "order": null
+  },
+  {
+   "id": 1252234,
+   "season_number": 1,
+   "episode_number": 11,
+   "name": "What's My Motivation",
+   "overview": "Eleanor and Tahani hatch a plan while Michael makes a startling discovery. Meanwhile, Chidi confides in Eleanor after learning some interesting news.",
+   "runtime": 22,
+   "air_date": "2017-01-12",
+   "order": null
+  },
+  {
+   "id": 1255845,
+   "season_number": 1,
+   "episode_number": 12,
+   "name": "Mindy St. Claire",
+   "overview": "With the help of Chidi and Tahani, Michael faces his biggest challenge yet. Meanwhile, Eleanor, Jianyu and Janet are faced with a monumental decision.",
+   "runtime": 22,
+   "air_date": "2017-01-19",
+   "order": null
+  },
+  {
+   "id": 1255846,
+   "season_number": 1,
+   "episode_number": 13,
+   "name": "Michael's Gambit",
+   "overview": "Eleanor, Jason, Chidi and Tahani argue about which two of them should go to the Bad Place. Eleanor has a shocking realization about the Good Place.",
+   "runtime": 22,
+   "air_date": "2017-01-19",
+   "order": null
+  }
+ ]
+}

@@ -1,0 +1,612 @@
+{
+ "id": "6772fc80cfe62644df133b27",
+ "name": "Bluray Release",
+ "type": 3,
+ "groups": [
+  {
+   "id": "6772fc987d1bc87de761969c",
+   "name": "Season 1",
+   "order": 1,
+   "episodes": [
+    {
+     "id": 1195668,
+     "season_number": 1,
+     "episode_number": 1,
+     "name": "Everything Is Fine",
+     "overview": "Newly-deceased Eleanor Shellstrop is sent to the Good Place, but only by mistake; Eleanor is determined to become a better person in her afterlife with help from friends Chidi and Janet; Eleanor tries to prove to Chidi that she's worthy of his help.",
+     "runtime": 23,
+     "air_date": "2016-09-19",
+     "order": 0
+    },
+    {
+     "id": 1223505,
+     "season_number": 1,
+     "episode_number": 3,
+     "name": "Tahani Al-Jamil",
+     "overview": "Chidi begins formally teaching Eleanor about ethics, and lesson No. 1 is: be kind to your neighbor. Michael and Janet help Chidi find a new, exciting hobby.",
+     "runtime": 22,
+     "air_date": "2016-09-22",
+     "order": 1
+    },
+    {
+     "id": 1223506,
+     "season_number": 1,
+     "episode_number": 4,
+     "name": "Jason Mendoza",
+     "overview": "Eleanor has a hard time remaining hidden.  Michael asks Tahani to assist a neighbor in finding her true purpose.",
+     "runtime": 22,
+     "air_date": "2016-09-29",
+     "order": 2
+    },
+    {
+     "id": 1223507,
+     "season_number": 1,
+     "episode_number": 5,
+     "name": "Category 55 Emergency Doomsday Crisis",
+     "overview": "Eleanor's eagerness to learn ethics from Chidi becomes the full-time job he never wanted. Meanwhile, Michael and Janet focus their attention on a Neighborhood emergency.",
+     "runtime": 22,
+     "air_date": "2016-10-06",
+     "order": 3
+    },
+    {
+     "id": 1223508,
+     "season_number": 1,
+     "episode_number": 6,
+     "name": "What We Owe to Each Other",
+     "overview": "Eleanor is enlisted to help Michael with an important task that could determine her fate in the Good Place. Meanwhile, Chidi agrees to be the third wheel in an effort to help out his friend.",
+     "runtime": 22,
+     "air_date": "2016-10-13",
+     "order": 4
+    },
+    {
+     "id": 1223509,
+     "season_number": 1,
+     "episode_number": 7,
+     "name": "The Eternal Shriek",
+     "overview": "Eleanor puts Janet in her crosshairs to save Michael from eternal suffering.",
+     "runtime": 22,
+     "air_date": "2016-10-20",
+     "order": 5
+    },
+    {
+     "id": 1223510,
+     "season_number": 1,
+     "episode_number": 8,
+     "name": "Most Improved Player",
+     "overview": "Michael has a private meeting with Eleanor, who is put to the test. Also, Chidi harbors a secret and mulls over what to do.",
+     "runtime": 22,
+     "air_date": "2016-10-27",
+     "order": 6
+    },
+    {
+     "id": 1223511,
+     "season_number": 1,
+     "episode_number": 9,
+     "name": "...Someone Like Me as a Member",
+     "overview": "Michael faces a challenge when he tries to resolve an unprecedented situation. In addition, Chidi makes a connection, to Eleanor's chagrin, and a different side of Janet emerges.",
+     "runtime": 22,
+     "air_date": "2016-11-03",
+     "order": 7
+    },
+    {
+     "id": 1238862,
+     "season_number": 1,
+     "episode_number": 10,
+     "name": "Chidi's Choice",
+     "overview": "Eleanor makes a surprising personal discovery. Meanwhile, Michael tasks an indecisive Chidi with coming to an important decision and Jianyu makes a big announcement.",
+     "runtime": 22,
+     "air_date": "2017-01-05",
+     "order": 8
+    },
+    {
+     "id": 1252234,
+     "season_number": 1,
+     "episode_number": 11,
+     "name": "What's My Motivation",
+     "overview": "Eleanor and Tahani hatch a plan while Michael makes a startling discovery. Meanwhile, Chidi confides in Eleanor after learning some interesting news.",
+     "runtime": 22,
+     "air_date": "2017-01-12",
+     "order": 9
+    },
+    {
+     "id": 1255845,
+     "season_number": 1,
+     "episode_number": 12,
+     "name": "Mindy St. Claire",
+     "overview": "With the help of Chidi and Tahani, Michael faces his biggest challenge yet. Meanwhile, Eleanor, Jianyu and Janet are faced with a monumental decision.",
+     "runtime": 22,
+     "air_date": "2017-01-19",
+     "order": 10
+    },
+    {
+     "id": 1255846,
+     "season_number": 1,
+     "episode_number": 13,
+     "name": "Michael's Gambit",
+     "overview": "Eleanor, Jason, Chidi and Tahani argue about which two of them should go to the Bad Place. Eleanor has a shocking realization about the Good Place.",
+     "runtime": 22,
+     "air_date": "2017-01-19",
+     "order": 11
+    }
+   ]
+  },
+  {
+   "id": "6772fcfe0f248e8508129cff",
+   "name": "Season 2",
+   "order": 2,
+   "episodes": [
+    {
+     "id": 1343101,
+     "season_number": 2,
+     "episode_number": 1,
+     "name": "Everything Is Great!",
+     "overview": "Having had their memories erased by ambitious master architect Michael, Eleanor, Chidi, Tahani and Jason again settle into the Good Place, unaware of what has previously transpired...except that Eleanor discovers the one clue she had left for herself and attempts to piece things together.",
+     "runtime": 43,
+     "air_date": "2017-09-20",
+     "order": 0
+    },
+    {
+     "id": 1366208,
+     "season_number": 2,
+     "episode_number": 2,
+     "name": "Dance Dance Resolution",
+     "overview": "Michael continues to work out the kinks in his grand plan. Meanwhile, Eleanor stumbles across a secret.",
+     "runtime": 22,
+     "air_date": "2017-09-28",
+     "order": 1
+    },
+    {
+     "id": 1366209,
+     "season_number": 2,
+     "episode_number": 3,
+     "name": "Team Cockroach",
+     "overview": "Michael approaches things from a new angle. Eleanor, Chidi, Tahani and Jason struggle to make a collective decision.",
+     "runtime": 22,
+     "air_date": "2017-10-05",
+     "order": 2
+    },
+    {
+     "id": 1371788,
+     "season_number": 2,
+     "episode_number": 4,
+     "name": "Existential Crisis",
+     "overview": "Tahani throws a dinner party to impress. Eleanor and Jason both have to lend a hand when things don't go as planned.",
+     "runtime": 22,
+     "air_date": "2017-10-12",
+     "order": 3
+    },
+    {
+     "id": 1371807,
+     "season_number": 2,
+     "episode_number": 5,
+     "name": "The Trolley Problem",
+     "overview": "Chidi and Eleanor tackle a famous ethical dilemma, leading to a conflict with Michael. Meanwhile, Tahani harbors a secret and confides in Janet.",
+     "runtime": 22,
+     "air_date": "2017-10-19",
+     "order": 4
+    },
+    {
+     "id": 1379271,
+     "season_number": 2,
+     "episode_number": 6,
+     "name": "Janet and Michael",
+     "overview": "When the Neighborhood experiences a small glitch, Michael has to resolve the issue with Janet before it gets out of control.",
+     "runtime": 22,
+     "air_date": "2017-10-26",
+     "order": 5
+    },
+    {
+     "id": 1379276,
+     "season_number": 2,
+     "episode_number": 7,
+     "name": "Derek",
+     "overview": "Janet creates a big problem for Michael. Meanwhile, Eleanor lets Chidi  in on a secret, and Jason puts Tahani in a difficult position.",
+     "runtime": 22,
+     "air_date": "2017-11-02",
+     "order": 6
+    },
+    {
+     "id": 1389172,
+     "season_number": 2,
+     "episode_number": 8,
+     "name": "Leap to Faith",
+     "overview": "Michael receives a surprise visitor. Meanwhile, Eleanor, Chidi, Tahani and Jason attempt to solve a riddle.",
+     "runtime": 23,
+     "air_date": "2018-01-04",
+     "order": 7
+    },
+    {
+     "id": 1407504,
+     "season_number": 2,
+     "episode_number": 9,
+     "name": "Best Self",
+     "overview": "Michael finds himself in a bind. Meanwhile, Eleanor sparks an idea that has Chidi, Tahani, Jason and even Janet laying their feelings on the line.",
+     "runtime": 22,
+     "air_date": "2018-01-11",
+     "order": 8
+    },
+    {
+     "id": 1417425,
+     "season_number": 2,
+     "episode_number": 10,
+     "name": "Rhonda, Diana, Jake, and Trent",
+     "overview": "Eleanor, Chidi, Tahani, Janet, and Jason head to a destination that may have lasting implications.",
+     "runtime": 22,
+     "air_date": "2018-01-18",
+     "order": 9
+    },
+    {
+     "id": 1417426,
+     "season_number": 2,
+     "episode_number": 11,
+     "name": "The Burrito",
+     "overview": "Eleanor, Chidi, Tahani, and Jason consider just how much they have (or have not) improved. Michael is left to deal with the consequences of his recent actions.",
+     "runtime": 22,
+     "air_date": "2018-01-25",
+     "order": 10
+    },
+    {
+     "id": 1417427,
+     "season_number": 2,
+     "episode_number": 12,
+     "name": "Somewhere Else",
+     "overview": "Michael makes a plea. Eleanor looks to take the high road. Michael tries to pull a rabbit out of a hat.",
+     "runtime": 22,
+     "air_date": "2018-02-01",
+     "order": 11
+    }
+   ]
+  },
+  {
+   "id": "6772fd6798f2f82fc4927ed2",
+   "name": "Season 3",
+   "order": 3,
+   "episodes": [
+    {
+     "id": 1510891,
+     "season_number": 3,
+     "episode_number": 1,
+     "name": "Everything Is Bonzer!",
+     "overview": "Michael intervenes in the near-death accidents of Eleanor, Chidi, Tahani and Jason on Earth, in hopes that a second chance at life allows them to become better versions of themselves.",
+     "runtime": 44,
+     "air_date": "2018-09-27",
+     "order": 0
+    },
+    {
+     "id": 1574791,
+     "season_number": 3,
+     "episode_number": 2,
+     "name": "The Brainy Bunch",
+     "overview": "Michael's grand scheme hits an unexpected snag and forces him to take drastic measures.",
+     "runtime": 22,
+     "air_date": "2018-10-04",
+     "order": 1
+    },
+    {
+     "id": 1586227,
+     "season_number": 3,
+     "episode_number": 3,
+     "name": "The Snowplow",
+     "overview": "A surprising announcement from one of the humans threatens to dissolve the group.",
+     "runtime": 22,
+     "air_date": "2018-10-11",
+     "order": 2
+    },
+    {
+     "id": 1586228,
+     "season_number": 3,
+     "episode_number": 4,
+     "name": "Jeremy Bearimy",
+     "overview": "The group explores the three main branches of ethical thought.",
+     "runtime": 22,
+     "air_date": "2018-10-18",
+     "order": 3
+    },
+    {
+     "id": 1590077,
+     "season_number": 3,
+     "episode_number": 5,
+     "name": "The Ballad of Donkey Doug",
+     "overview": "Jason visits with some people from his past while Chidi gets help in resolving a problem.",
+     "runtime": 22,
+     "air_date": "2018-10-25",
+     "order": 4
+    },
+    {
+     "id": 1591871,
+     "season_number": 3,
+     "episode_number": 6,
+     "name": "A Fractured Inheritance",
+     "overview": "Eleanor makes a startling discovery that tests her resolve, Tahani looks to make amends and Janet does some bonding.",
+     "runtime": 22,
+     "air_date": "2018-11-01",
+     "order": 5
+    },
+    {
+     "id": 1593084,
+     "season_number": 3,
+     "episode_number": 7,
+     "name": "The Worst Possible Use of Free Will",
+     "overview": "Eleanor recalls some forgotten events from her past.",
+     "runtime": 22,
+     "air_date": "2018-11-08",
+     "order": 6
+    },
+    {
+     "id": 1593085,
+     "season_number": 3,
+     "episode_number": 8,
+     "name": "Don't Let the Good Life Pass You By",
+     "overview": "Michael and Janet visit the person they believe to be the blueprint for how to live a good life on Earth; Eleanor turns to Tahani for advice.",
+     "runtime": 22,
+     "air_date": "2018-11-15",
+     "order": 7
+    },
+    {
+     "id": 1593086,
+     "season_number": 3,
+     "episode_number": 9,
+     "name": "Janet(s)",
+     "overview": "While Eleanor and the gang contend with an intense out-of-body experience, Michael hatches a plan with Janet's help.",
+     "runtime": 23,
+     "air_date": "2018-12-06",
+     "order": 8
+    },
+    {
+     "id": 1624957,
+     "season_number": 3,
+     "episode_number": 10,
+     "name": "The Book of Dougs",
+     "overview": "Michael's resolve is put to the test. Meanwhile, Jason wrestles with his feelings and Chidi surprises Eleanor.",
+     "runtime": 22,
+     "air_date": "2019-01-10",
+     "order": 9
+    },
+    {
+     "id": 1664109,
+     "season_number": 3,
+     "episode_number": 11,
+     "name": "Chidi Sees the Time-Knife",
+     "overview": "Michael arranges an important meeting and Janet makes a reconnection.",
+     "runtime": 22,
+     "air_date": "2019-01-17",
+     "order": 10
+    },
+    {
+     "id": 1664110,
+     "season_number": 3,
+     "episode_number": 12,
+     "name": "Pandemonium",
+     "overview": "Michael's crisis forces Eleanor to assume the title of the neighborhood architect. Tahani makes a discovery about the new humans.",
+     "runtime": 22,
+     "air_date": "2019-01-24",
+     "order": 11
+    }
+   ]
+  },
+  {
+   "id": "6772fd9c43a21982da12bf17",
+   "name": "Season 4",
+   "order": 4,
+   "episodes": [
+    {
+     "id": 1879380,
+     "season_number": 4,
+     "episode_number": 1,
+     "name": "A Girl from Arizona (1)",
+     "overview": "With Eleanor assuming the role of the architect, the group adapts to the challenges facing them when four test subjects inhabit a new neighborhood under their supervision.",
+     "runtime": 23,
+     "air_date": "2019-09-26",
+     "order": 0
+    },
+    {
+     "id": 1938962,
+     "season_number": 4,
+     "episode_number": 2,
+     "name": "A Girl from Arizona (2)",
+     "overview": "Eleanor, Michael, Janet and Tahani have their hands full when the new residents begin to show their true colors. Jason receives some unsettling news.",
+     "runtime": 22,
+     "air_date": "2019-10-03",
+     "order": 1
+    },
+    {
+     "id": 1939845,
+     "season_number": 4,
+     "episode_number": 3,
+     "name": "Chillaxing",
+     "overview": "Michael and Eleanor discover something troubling and turn to an unusual source for help. Tahani lends her expertise to assist with one of the new residents.",
+     "runtime": 22,
+     "air_date": "2019-10-10",
+     "order": 2
+    },
+    {
+     "id": 1945236,
+     "season_number": 4,
+     "episode_number": 4,
+     "name": "Tinker, Tailor, Demon, Spy",
+     "overview": "As the group deals with a frustrating lack of progress, a visitor arrives and makes a shocking claim that causes them to question who can be trusted.",
+     "runtime": 22,
+     "air_date": "2019-10-17",
+     "order": 3
+    },
+    {
+     "id": 1954743,
+     "season_number": 4,
+     "episode_number": 5,
+     "name": "Employee of the Bearimy",
+     "overview": "Michael and Jason sneak into Demon-Con. Left in charge of the neighborhood, Eleanor copes with Derek's ineptitude and Tahani's dissatisfaction.",
+     "runtime": 22,
+     "air_date": "2019-10-24",
+     "order": 4
+    },
+    {
+     "id": 1954744,
+     "season_number": 4,
+     "episode_number": 6,
+     "name": "A Chip Driver Mystery",
+     "overview": "After Brent writes an offensive book, Eleanor, Michael and the others try to help him evolve. One of the humans discovers Jason's true identity.",
+     "runtime": 22,
+     "air_date": "2019-10-31",
+     "order": 5
+    },
+    {
+     "id": 1964746,
+     "season_number": 4,
+     "episode_number": 7,
+     "name": "Help Is Other People",
+     "overview": "With one day left in the year, Simone reveals that she's suspicious about the neighborhood -- and her investigation could derail the entire experiment.",
+     "runtime": 22,
+     "air_date": "2019-11-07",
+     "order": 6
+    },
+    {
+     "id": 1972661,
+     "season_number": 4,
+     "episode_number": 8,
+     "name": "The Funeral to End All Funerals",
+     "overview": "As the Judge hears Michael and Shawn's arguments about the results of the experiment, Janet and the humans give each other the funerals they deserved.",
+     "runtime": 22,
+     "air_date": "2019-11-14",
+     "order": 7
+    },
+    {
+     "id": 1978272,
+     "season_number": 4,
+     "episode_number": 9,
+     "name": "The Answer",
+     "overview": "With time running out to find answers, Chidi must sort through his life -- and afterlives -- before he can provide the help everyone needs.",
+     "runtime": 22,
+     "air_date": "2019-11-21",
+     "order": 8
+    },
+    {
+     "id": 1993068,
+     "season_number": 4,
+     "episode_number": 10,
+     "name": "You've Changed, Man",
+     "overview": "The group scrambles to devise a new afterlife system that the Good and Bad Places can agree on before it's too late. Chidi has a newfound confidence.",
+     "runtime": 22,
+     "air_date": "2020-01-09",
+     "order": 9
+    },
+    {
+     "id": 2043897,
+     "season_number": 4,
+     "episode_number": 11,
+     "name": "Mondays, Am I Right?",
+     "overview": "While the humans search for test candidates, Michael trains a group of architects. Eleanor doesn't want Chidi to learn too much about her past.",
+     "runtime": 22,
+     "air_date": "2020-01-16",
+     "order": 10
+    },
+    {
+     "id": 2043898,
+     "season_number": 4,
+     "episode_number": 12,
+     "name": "Patty",
+     "overview": "Arriving at a new place, Michael receives an unexpected honor. Meanwhile, the rest of the group explores \u2014 and learns a shocking truth.",
+     "runtime": 22,
+     "air_date": "2020-01-23",
+     "order": 11
+    },
+    {
+     "id": 2043899,
+     "season_number": 4,
+     "episode_number": 13,
+     "name": "Whenever You're Ready",
+     "overview": "Michael works with the Joint Council of Afterlife Affairs to smooth out kinks in the system. Jason and Tahani move on. Eleanor tries to influence Chidi.",
+     "runtime": 54,
+     "air_date": "2020-01-30",
+     "order": 12
+    }
+   ]
+  },
+  {
+   "id": "6772fdb97d1bc87de7619703",
+   "name": "Specials",
+   "order": 0,
+   "episodes": [
+    {
+     "id": 1929260,
+     "season_number": 0,
+     "episode_number": 1,
+     "name": "The Selection: The Mission (1)",
+     "overview": "Shawn and his demon cohorts plot to destroy Michael\u2019s new neighborhood. Shawn gets the demons briefed on their mission.",
+     "runtime": 3,
+     "air_date": "2019-09-13",
+     "order": 0
+    },
+    {
+     "id": 1929261,
+     "season_number": 0,
+     "episode_number": 2,
+     "name": "The Selection: The Candidates (2)",
+     "overview": "Shawn\u2019s demon ding-dongs pitch their human choices for Michael\u2019s new neighborhood.",
+     "runtime": 2,
+     "air_date": "2019-09-13",
+     "order": 1
+    },
+    {
+     "id": 1929262,
+     "season_number": 0,
+     "episode_number": 3,
+     "name": "The Selection: The Takeout Order (3)",
+     "overview": "Shawn\u2019s demon ash-holes try to decide what to eat. Maybe some sludge from the inside of shoes that you don\u2019t wear socks with?",
+     "runtime": 2,
+     "air_date": "2019-09-13",
+     "order": 2
+    },
+    {
+     "id": 1929263,
+     "season_number": 0,
+     "episode_number": 4,
+     "name": "The Selection: The Storm Out (4)",
+     "overview": "Tensions rise as the demons try to select the right \u201chuman fart bombs\u201d for Michael\u2019s new neighborhood. Glenn feels Shawn is being too mean.",
+     "runtime": 2,
+     "air_date": "2019-09-13",
+     "order": 3
+    },
+    {
+     "id": 1929264,
+     "season_number": 0,
+     "episode_number": 5,
+     "name": "The Selection: The Talk (5)",
+     "overview": "In a demon-to-demon chat with Glenn, Shawn is inspired to rethink the way he forks with Michael\u2019s new neighborhood.",
+     "runtime": 2,
+     "air_date": "2019-09-13",
+     "order": 4
+    },
+    {
+     "id": 1929265,
+     "season_number": 0,
+     "episode_number": 6,
+     "name": "The Selection: The Solution (6)",
+     "overview": "When Shawn takes aim on a more personal attack on the humans, Glenn has some reservations.",
+     "runtime": 3,
+     "air_date": "2019-09-13",
+     "order": 5
+    },
+    {
+     "id": 2066463,
+     "season_number": 0,
+     "episode_number": 7,
+     "name": "Series Finale Aftershow",
+     "overview": "Holy motherforking shirtballs - this really is the end! In this series finale aftershow the main cast of the Good Place reminisces about filming the last episode and how each of them feels about the show ending. They also give quite emotional toasts to each other.",
+     "runtime": 12,
+     "air_date": "2020-01-31",
+     "order": 6
+    },
+    {
+     "id": 2803478,
+     "season_number": 0,
+     "episode_number": 8,
+     "name": "2019 San Diego Comic-Con Panel",
+     "overview": "Marc Evan Jackson moderates a forking great conversation between stars Ted Danson, Kristen Bell, William Jackson Harper, D\u2019Arcy Carden, Manny Jacinto and executive producers Michael Schur and Drew Goddard at the 2019 San Diego Comic-Con.",
+     "runtime": 22,
+     "air_date": "2020-05-19",
+     "order": 7
+    }
+   ]
+  }
+ ]
+}

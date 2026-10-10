@@ -1,0 +1,917 @@
+{
+ "GOOD_PLACE_S1_D1_t00.mkv": {
+  "size_bytes": 10440217735,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "h264",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 4,
+     "codec_type": "subtitle",
+     "codec_name": "hdmv_pgs_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "196.696500"
+    },
+    {
+     "start_time": "576.158917"
+    },
+    {
+     "start_time": "1238.237000"
+    },
+    {
+     "start_time": "1363.904208"
+    },
+    {
+     "start_time": "1775.440333"
+    },
+    {
+     "start_time": "2218.549667"
+    },
+    {
+     "start_time": "2464.587125"
+    },
+    {
+     "start_time": "2520.142625"
+    }
+   ],
+   "format": {
+    "duration": "2563.018000"
+   }
+  }
+ },
+ "GOOD_PLACE_S1_D1_t01.mkv": {
+  "size_bytes": 7182792861,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "h264",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "hdmv_pgs_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "129.879750"
+    },
+    {
+     "start_time": "374.540833"
+    },
+    {
+     "start_time": "915.956708"
+    },
+    {
+     "start_time": "1294.584958"
+    },
+    {
+     "start_time": "1442.649542"
+    }
+   ],
+   "format": {
+    "duration": "1494.997000"
+   }
+  }
+ },
+ "GOOD_PLACE_S1_D1_t02.mkv": {
+  "size_bytes": 6474464938,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "h264",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "hdmv_pgs_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "142.767625"
+    },
+    {
+     "start_time": "517.850667"
+    },
+    {
+     "start_time": "965.464500"
+    },
+    {
+     "start_time": "1230.229000"
+    },
+    {
+     "start_time": "1302.134167"
+    }
+   ],
+   "format": {
+    "duration": "1353.973000"
+   }
+  }
+ },
+ "GOOD_PLACE_S1_D1_t03.mkv": {
+  "size_bytes": 7601857982,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "h264",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "hdmv_pgs_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "102.310542"
+    },
+    {
+     "start_time": "547.755542"
+    },
+    {
+     "start_time": "957.831875"
+    },
+    {
+     "start_time": "1197.070875"
+    },
+    {
+     "start_time": "1527.526000"
+    }
+   ],
+   "format": {
+    "duration": "1578.965000"
+   }
+  }
+ },
+ "GOOD_PLACE_S1_D1_t04.mkv": {
+  "size_bytes": 7621581166,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "h264",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "hdmv_pgs_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "124.332542"
+    },
+    {
+     "start_time": "625.499875"
+    },
+    {
+     "start_time": "1106.772333"
+    },
+    {
+     "start_time": "1417.707958"
+    },
+    {
+     "start_time": "1531.071208"
+    }
+   ],
+   "format": {
+    "duration": "1581.952000"
+   }
+  }
+ },
+ "GOOD_PLACE_S1_D1_t06.mkv": {
+  "size_bytes": 6974385053,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "h264",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "audio",
+     "codec_name": "dts",
+     "channels": 6,
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "hdmv_pgs_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "105.563792"
+    },
+    {
+     "start_time": "450.533417"
+    },
+    {
+     "start_time": "900.065833"
+    },
+    {
+     "start_time": "1239.446542"
+    },
+    {
+     "start_time": "1402.025625"
+    }
+   ],
+   "format": {
+    "duration": "1454.976000"
+   }
+  }
+ }
+}
