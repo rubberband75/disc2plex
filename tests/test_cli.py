@@ -58,10 +58,7 @@ def test_missing_ffprobe_gives_clear_error(tmp_path: Path, monkeypatch: pytest.M
     assert "ffprobe not found" in result.output
 
 
-def test_unimplemented_command_exits_nonzero(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(cli.shutil, "which", lambda name: f"/usr/bin/{name}")
-    result = runner.invoke(app, ["scan", str(tmp_path)])
+def test_unimplemented_command_exits_nonzero() -> None:
+    result = runner.invoke(app, ["tmdb", "search", "Firefly"])
     assert result.exit_code == 1
     assert "Not implemented" in result.output

@@ -1,0 +1,18 @@
+{
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "mpeg2video",
+      "codec_type": "video",
+      "tags": {"DURATION": "00:44:10.500000000"}
+    },
+    {
+      "index": 1,
+      "codec_name": "ac3",
+      "codec_type": "audio",
+      "channels": 2,
+      "tags": {"DURATION": "00:44:09.900000000"}
+    }
+  ],
+  "format": {"format_name": "matroska,webm"}
+}

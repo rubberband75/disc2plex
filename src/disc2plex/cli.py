@@ -1,7 +1,7 @@
 """Typer entry point for the ``disc2plex`` command.
 
-Milestone 1: commands and options are declared so ``--help`` documents the
-intended interface, but the pipeline behind them is not implemented yet.
+Commands not yet implemented are declared so ``--help`` documents the intended
+interface; they exit with a "not implemented" message.
 """
 
 from __future__ import annotations
@@ -13,8 +13,11 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.console import Console
 
 from disc2plex import __version__
+from disc2plex.report import render_scan, scan_to_json
+from disc2plex.scan import ProbeCache, default_cache_path, scan_directory
 
 app = typer.Typer(
     help="Identify, rename, and organize MakeMKV TV-series rips for Plex.",
@@ -140,10 +143,18 @@ def scan(
         bool, typer.Option("--recursive", help="Descend into subfolders.")
     ] = False,
     json_out: JsonOpt = False,
+    no_cache: Annotated[
+        bool, typer.Option("--no-cache", help="Re-probe every file, ignoring the cache.")
+    ] = False,
 ) -> None:
     """Show probed files and their classification."""
     require_ffprobe()
-    _not_implemented(3)
+    cache = None if no_cache else ProbeCache(default_cache_path())
+    result = scan_directory(rip_dir, recursive=recursive, cache=cache)
+    if json_out:
+        typer.echo(scan_to_json(result))
+    else:
+        render_scan(result, Console())
 
 
 @app.command()

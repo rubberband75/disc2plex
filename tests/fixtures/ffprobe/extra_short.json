@@ -1,0 +1,15 @@
+{
+  "streams": [
+    {"index": 0, "codec_name": "mpeg2video", "codec_type": "video"},
+    {
+      "index": 1,
+      "codec_name": "ac3",
+      "codec_type": "audio",
+      "channels": 2,
+      "disposition": {"default": 1},
+      "tags": {"language": "eng"}
+    }
+  ],
+  "chapters": [],
+  "format": {"format_name": "matroska,webm", "duration": "184.500000"}
+}

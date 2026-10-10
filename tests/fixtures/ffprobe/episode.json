@@ -1,0 +1,56 @@
+{
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "mpeg2video",
+      "codec_type": "video",
+      "width": 720,
+      "height": 480,
+      "disposition": {"default": 1, "forced": 0},
+      "tags": {"DURATION": "00:43:00.123000000"}
+    },
+    {
+      "index": 1,
+      "codec_name": "ac3",
+      "codec_type": "audio",
+      "channels": 6,
+      "disposition": {"default": 1, "forced": 0},
+      "tags": {"language": "eng", "title": "Surround 5.1"}
+    },
+    {
+      "index": 2,
+      "codec_name": "ac3",
+      "codec_type": "audio",
+      "channels": 2,
+      "disposition": {"default": 0, "forced": 0},
+      "tags": {"language": "fre"}
+    },
+    {
+      "index": 3,
+      "codec_name": "dvd_subtitle",
+      "codec_type": "subtitle",
+      "disposition": {"default": 0, "forced": 0},
+      "tags": {"language": "eng"}
+    },
+    {
+      "index": 4,
+      "codec_name": "dvd_subtitle",
+      "codec_type": "subtitle",
+      "disposition": {"default": 0, "forced": 1},
+      "tags": {"language": "spa"}
+    }
+  ],
+  "chapters": [
+    {"id": 0, "start_time": "0.000000", "end_time": "312.512000"},
+    {"id": 1, "start_time": "312.512000", "end_time": "845.100000"},
+    {"id": 2, "start_time": "845.100000", "end_time": "1490.000000"},
+    {"id": 3, "start_time": "1490.000000", "end_time": "2100.400000"},
+    {"id": 4, "start_time": "2100.400000", "end_time": "2580.123000"}
+  ],
+  "format": {
+    "filename": "title_t00.mkv",
+    "format_name": "matroska,webm",
+    "duration": "2580.123000",
+    "size": "1503238553"
+  }
+}

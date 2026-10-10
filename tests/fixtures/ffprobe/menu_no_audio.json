@@ -1,0 +1,6 @@
+{
+  "streams": [
+    {"index": 0, "codec_name": "mpeg2video", "codec_type": "video"}
+  ],
+  "format": {"format_name": "matroska,webm", "duration": "30.030000"}
+}
