@@ -5,6 +5,7 @@ Models are added in the milestone that first needs them (see CLAUDE.md section 6
 
 from __future__ import annotations
 
+from datetime import date
 from enum import StrEnum
 from pathlib import Path
 
@@ -92,6 +93,84 @@ class ClassifyResult(_Frozen):
 
     def by_class(self, file_class: FileClass) -> tuple[Classification, ...]:
         return tuple(item for item in self.items if item.file_class is file_class)
+
+
+class EpisodeInfo(_Frozen):
+    """One episode from TMDB. ``season``/``episode`` are always TMDB's aired numbering,
+    which is what Plex's TMDB agent matches on, even when DVD order was used to
+    decide which episodes are on a disc."""
+
+    season: int
+    episode: int
+    title: str
+    overview: str = ""
+    runtime_minutes: float | None = None
+    air_date: date | None = None
+    tmdb_id: int | None = None
+
+
+class ShowSummary(_Frozen):
+    """A TMDB search hit."""
+
+    tmdb_id: int
+    name: str
+    year: int | None = None
+    original_name: str | None = None
+    overview: str = ""
+    popularity: float = 0.0
+
+
+class SeasonSummary(_Frozen):
+    number: int
+    name: str
+    episode_count: int
+
+
+# TMDB episode-group type codes.
+EPISODE_GROUP_TYPES = {
+    1: "Original air date",
+    2: "Absolute",
+    3: "DVD",
+    4: "Digital",
+    5: "Story arc",
+    6: "Production",
+    7: "TV",
+}
+
+
+class EpisodeGroupSummary(_Frozen):
+    id: str
+    name: str
+    type: int
+    group_count: int = 0
+    episode_count: int = 0
+    description: str = ""
+
+    @property
+    def type_name(self) -> str:
+        return EPISODE_GROUP_TYPES.get(self.type, f"type {self.type}")
+
+
+class ShowInfo(_Frozen):
+    """Show-level TMDB metadata. Episode lists are fetched per season on demand."""
+
+    tmdb_id: int
+    name: str
+    year: int | None = None
+    seasons: tuple[SeasonSummary, ...] = ()
+    episode_groups: tuple[EpisodeGroupSummary, ...] = ()
+    # Show-wide typical runtime (TMDB's episode_run_time); often empty nowadays.
+    default_runtime_minutes: float | None = None
+
+
+class SeasonEpisodes(_Frozen):
+    """The episodes making up one season under a chosen ordering, in that order."""
+
+    show: ShowInfo
+    season: int
+    order: str  # "aired", "dvd", or an episode-group ID
+    label: str  # human-readable, e.g. "Season 1 (aired)" or "Season 1 (DVD: DVD Order)"
+    episodes: tuple[EpisodeInfo, ...] = ()
 
 
 class ScanFailure(_Frozen):

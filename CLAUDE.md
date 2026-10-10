@@ -203,6 +203,8 @@ disc2plex plan   <rip_dir> --show "Name" [opts]  # full pipeline, dry-run, print
 disc2plex apply  <rip_dir> --show "Name" [opts]  # same as plan, then execute
 disc2plex undo   <manifest.json>                 # reverse a previous apply
 disc2plex tmdb   search "Show Name"              # helper to find TMDB IDs
+disc2plex tmdb   show <tmdb-id>                  # seasons + episode-group IDs for --order
+disc2plex tmdb   season <tmdb-id> <n> [--order]  # episode list in the chosen order
 ```
 
 Common options:
@@ -355,5 +357,13 @@ When starting, ask the user about these and record answers in this file:
   - Reference length: the largest cluster (±15%) of titles ≥10 min, or the cluster nearest the expected runtime when one is given (the observed median beats rounded TMDB runtimes); falls back to the expected runtime.
   - Bands by ratio to the reference: 0.8–1.2 episode, 1.6–2.4 episode with `episode_count_hint=2`, < 0.5 extra, everything else UNKNOWN. Without any reference: < 5 min extra, else UNKNOWN.
   - `scan` shows Class/Why columns; `scan --episode-length MIN` supplies the expected runtime until TMDB is wired in.
+- 2026-10-10: Milestone 5 (TMDB) done, tested with mocks only (no token configured yet, so no live call has been made). Added `httpx`; `.env` is loaded by a tiny parser in `config.py` (no python-dotenv) from `./.env` then `~/.config/disc2plex/.env`, and never overrides real env vars. `TMDB_API_TOKEN` may be a v4 bearer token (preferred) or a 32-hex v3 API key (sent as `api_key`).
+  - Cache: `~/.cache/disc2plex/tmdb/` (XDG, same base as the probe cache, instead of the `.cache/tmdb/` in section 7), one file per request keyed by path + params, 7-day TTL, credentials never written. Errors are not cached.
+  - 429: honours Retry-After (capped at 10 s), 2 retries.
+  - Show resolution: `--tmdb-id` wins; otherwise accept the only search hit or the only exact normalized-name match (year-filtered); otherwise raise `AmbiguousShowError` listing candidates. (The interactive prompt comes with the `plan` command in M6.)
+  - **DVD/group order keeps aired numbering:** `--order dvd|<group-id>` decides which episodes and in what sequence (for matching), but each `EpisodeInfo` keeps TMDB's aired season/episode numbers, and files are named with those, since that is what Plex's TMDB agent matches on.
+  - Group sub-season selection: a name match ("Season N"/"Series N"/"Volume N"), "Specials" for season 0, else the Nth non-special sub-group by `order`.
+  - `ShowInfo` holds season summaries + episode groups; episode lists are fetched per season on demand (not all seasons up front).
+  - Extra debug commands: `tmdb show <id>` (seasons + episode-group IDs) and `tmdb season <id> <n> [--order]`.
 
 

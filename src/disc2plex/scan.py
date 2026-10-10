@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from disc2plex.config import cache_dir
 from disc2plex.models import AudioTrack, MediaFile, ScanFailure, ScanResult, SubtitleTrack
 
 log = logging.getLogger(__name__)
@@ -195,8 +195,7 @@ def run_ffprobe(path: Path) -> ProbeData:
 
 def default_cache_path() -> Path:
     """Probe cache location: ``$XDG_CACHE_HOME/disc2plex/probe.json``."""
-    base = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
-    return Path(base) / "disc2plex" / "probe.json"
+    return cache_dir() / "probe.json"
 
 
 class ProbeCache:

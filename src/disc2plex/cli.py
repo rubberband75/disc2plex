@@ -7,7 +7,10 @@ interface; they exit with a "not implemented" message.
 from __future__ import annotations
 
 import logging
+import os
 import shutil
+from collections.abc import Iterator
+from contextlib import contextmanager
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
@@ -17,8 +20,22 @@ from rich.console import Console
 
 from disc2plex import __version__
 from disc2plex.classify import classify
-from disc2plex.report import render_scan, scan_to_json
+from disc2plex.config import load_dotenv
+from disc2plex.report import (
+    render_scan,
+    render_search_results,
+    render_season,
+    render_show,
+    scan_to_json,
+)
 from disc2plex.scan import ProbeCache, default_cache_path, scan_directory
+from disc2plex.tmdb import (
+    TMDBCache,
+    TMDBClient,
+    TMDBError,
+    default_tmdb_cache_dir,
+    season_episodes,
+)
 
 app = typer.Typer(
     help="Identify, rename, and organize MakeMKV TV-series rips for Plex.",
@@ -234,10 +251,44 @@ def undo(
     _not_implemented(7)
 
 
+@contextmanager
+def tmdb_session() -> Iterator[TMDBClient]:
+    """Yield a cached TMDB client; turn TMDB errors into a clean CLI exit."""
+    load_dotenv()
+    try:
+        with TMDBClient(
+            os.environ.get("TMDB_API_TOKEN", ""), cache=TMDBCache(default_tmdb_cache_dir())
+        ) as client:
+            yield client
+    except TMDBError as exc:
+        typer.secho(f"Error: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+
 @tmdb_app.command("search")
 def tmdb_search(
     query: Annotated[str, typer.Argument(help="Show name to search for.")],
     year: YearOpt = None,
 ) -> None:
     """Search TMDB for a show and print matching IDs."""
-    _not_implemented(5)
+    with tmdb_session() as client:
+        render_search_results(client.search_tv(query, year), Console())
+
+
+@tmdb_app.command("show")
+def tmdb_show(tmdb_id: Annotated[int, typer.Argument(help="TMDB show ID.")]) -> None:
+    """List a show's seasons and episode groups (IDs usable with --order)."""
+    with tmdb_session() as client:
+        render_show(client.get_show(tmdb_id), Console())
+
+
+@tmdb_app.command("season")
+def tmdb_season(
+    tmdb_id: Annotated[int, typer.Argument(help="TMDB show ID.")],
+    season: Annotated[int, typer.Argument(help="Season number.")],
+    order: OrderOpt = "aired",
+) -> None:
+    """List a season's episodes in aired, DVD, or episode-group order."""
+    with tmdb_session() as client:
+        show = client.get_show(tmdb_id)
+        render_season(season_episodes(client, show, season, order), Console())

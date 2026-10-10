@@ -1,0 +1,21 @@
+{
+  "id": 1437,
+  "results": [
+    {
+      "id": "5b0c3a5c0e0a267b7a00a1f1",
+      "name": "DVD Order",
+      "type": 3,
+      "group_count": 1,
+      "episode_count": 14,
+      "description": "Order on the 2003 DVD box set"
+    },
+    {
+      "id": "5c1d2e3f4a5b6c7d8e9f0a1b",
+      "name": "Production Order",
+      "type": 6,
+      "group_count": 1,
+      "episode_count": 14,
+      "description": ""
+    }
+  ]
+}

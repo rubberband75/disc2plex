@@ -7,7 +7,15 @@ import json
 from rich.console import Console
 from rich.table import Table
 
-from disc2plex.models import ClassifyResult, FileClass, MediaFile, ScanResult
+from disc2plex.models import (
+    ClassifyResult,
+    FileClass,
+    MediaFile,
+    ScanResult,
+    SeasonEpisodes,
+    ShowInfo,
+    ShowSummary,
+)
 
 
 def format_duration(seconds: float) -> str:
@@ -100,3 +108,66 @@ def scan_to_json(scan: ScanResult, classified: ClassifyResult) -> str:
     payload = classified.model_dump(mode="json")
     payload["failures"] = [f.model_dump(mode="json") for f in scan.failures]
     return json.dumps(payload, indent=2)
+
+
+def _truncate(text: str, width: int) -> str:
+    text = " ".join(text.split())
+    return text if len(text) <= width else text[: width - 1].rstrip() + "…"
+
+
+def render_search_results(results: list[ShowSummary], console: Console) -> None:
+    """Print TMDB search hits."""
+    if not results:
+        console.print("[yellow]No shows found.[/yellow]")
+        return
+    table = Table(title="TMDB search results")
+    table.add_column("TMDB ID", justify="right")
+    table.add_column("Name")
+    table.add_column("Year", justify="right")
+    table.add_column("Overview")
+    for r in results:
+        table.add_row(str(r.tmdb_id), r.name, str(r.year or "?"), _truncate(r.overview, 70))
+    console.print(table)
+
+
+def render_show(show: ShowInfo, console: Console) -> None:
+    """Print a show's seasons and episode groups (for choosing --season / --order)."""
+    console.print(f"[bold]{show.name}[/bold] ({show.year or '?'})  tmdb-{show.tmdb_id}")
+    seasons = Table(title="Seasons")
+    seasons.add_column("Season", justify="right")
+    seasons.add_column("Name")
+    seasons.add_column("Episodes", justify="right")
+    for s in show.seasons:
+        seasons.add_row(str(s.number), s.name, str(s.episode_count))
+    console.print(seasons)
+    if not show.episode_groups:
+        console.print("No episode groups (only aired order is available).")
+        return
+    groups = Table(title="Episode groups (use the ID with --order)")
+    groups.add_column("ID")
+    groups.add_column("Type")
+    groups.add_column("Name")
+    groups.add_column("Groups", justify="right")
+    groups.add_column("Episodes", justify="right")
+    for g in show.episode_groups:
+        groups.add_row(g.id, g.type_name, g.name, str(g.group_count), str(g.episode_count))
+    console.print(groups)
+
+
+def render_season(season: SeasonEpisodes, console: Console) -> None:
+    """Print a season's episodes in the chosen order."""
+    table = Table(title=f"{season.show.name}: {season.label}")
+    table.add_column("#", justify="right")
+    table.add_column("Code")
+    table.add_column("Title")
+    table.add_column("Runtime", justify="right")
+    table.add_column("Aired")
+    for position, e in enumerate(season.episodes, start=1):
+        table.add_row(
+            str(position),
+            f"s{e.season:02d}e{e.episode:02d}",
+            e.title,
+            f"{e.runtime_minutes:g} min" if e.runtime_minutes else "-",
+            e.air_date.isoformat() if e.air_date else "-",
+        )
+    console.print(table)

@@ -32,6 +32,8 @@ def test_no_args_shows_help() -> None:
         ["apply", "--help"],
         ["undo", "--help"],
         ["tmdb", "search", "--help"],
+        ["tmdb", "show", "--help"],
+        ["tmdb", "season", "--help"],
     ],
 )
 def test_help(args: list[str]) -> None:
@@ -58,7 +60,9 @@ def test_missing_ffprobe_gives_clear_error(tmp_path: Path, monkeypatch: pytest.M
     assert "ffprobe not found" in result.output
 
 
-def test_unimplemented_command_exits_nonzero() -> None:
-    result = runner.invoke(app, ["tmdb", "search", "Firefly"])
+def test_unimplemented_command_exits_nonzero(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text("{}")
+    result = runner.invoke(app, ["undo", str(manifest)])
     assert result.exit_code == 1
     assert "Not implemented" in result.output

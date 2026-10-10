@@ -1,0 +1,22 @@
+{
+  "page": 1,
+  "total_results": 2,
+  "results": [
+    {
+      "id": 1437,
+      "name": "Firefly",
+      "original_name": "Firefly",
+      "first_air_date": "2002-09-20",
+      "overview": "Five hundred years in the future...",
+      "popularity": 80.5
+    },
+    {
+      "id": 99001,
+      "name": "Firefly Lane",
+      "original_name": "Firefly Lane",
+      "first_air_date": "2021-02-03",
+      "overview": "Two friends...",
+      "popularity": 40.1
+    }
+  ]
+}

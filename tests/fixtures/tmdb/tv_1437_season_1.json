@@ -1,0 +1,133 @@
+{
+  "id": 3600,
+  "season_number": 1,
+  "name": "Season 1",
+  "episodes": [
+    {
+      "id": 60008,
+      "season_number": 1,
+      "episode_number": 8,
+      "name": "Ariel",
+      "overview": "Mal and the crew of Serenity face trouble in Ariel.",
+      "air_date": "2002-11-15",
+      "runtime": 44
+    },
+    {
+      "id": 60009,
+      "season_number": 1,
+      "episode_number": 9,
+      "name": "War Stories",
+      "overview": "Mal and the crew of Serenity face trouble in War Stories.",
+      "air_date": "2002-12-06",
+      "runtime": 44
+    },
+    {
+      "id": 60010,
+      "season_number": 1,
+      "episode_number": 10,
+      "name": "Objects in Space",
+      "overview": "Mal and the crew of Serenity face trouble in Objects in Space.",
+      "air_date": "2002-12-13",
+      "runtime": 44
+    },
+    {
+      "id": 60011,
+      "season_number": 1,
+      "episode_number": 11,
+      "name": "Serenity",
+      "overview": "Mal and the crew of Serenity face trouble in Serenity.",
+      "air_date": "2002-12-20",
+      "runtime": 86
+    },
+    {
+      "id": 60012,
+      "season_number": 1,
+      "episode_number": 12,
+      "name": "Heart of Gold",
+      "overview": "Mal and the crew of Serenity face trouble in Heart of Gold.",
+      "air_date": "2003-06-23",
+      "runtime": 44
+    },
+    {
+      "id": 60013,
+      "season_number": 1,
+      "episode_number": 13,
+      "name": "Trash",
+      "overview": "Mal and the crew of Serenity face trouble in Trash.",
+      "air_date": "2003-07-21",
+      "runtime": 44
+    },
+    {
+      "id": 60014,
+      "season_number": 1,
+      "episode_number": 14,
+      "name": "The Message",
+      "overview": "Mal and the crew of Serenity face trouble in The Message.",
+      "air_date": "2003-07-28",
+      "runtime": 44
+    },
+    {
+      "id": 60001,
+      "season_number": 1,
+      "episode_number": 1,
+      "name": "The Train Job",
+      "overview": "Mal and the crew of Serenity face trouble in The Train Job.",
+      "air_date": "2002-09-20",
+      "runtime": 44
+    },
+    {
+      "id": 60002,
+      "season_number": 1,
+      "episode_number": 2,
+      "name": "Bushwhacked",
+      "overview": "Mal and the crew of Serenity face trouble in Bushwhacked.",
+      "air_date": "2002-09-27",
+      "runtime": 44
+    },
+    {
+      "id": 60003,
+      "season_number": 1,
+      "episode_number": 3,
+      "name": "Our Mrs. Reynolds",
+      "overview": "Mal and the crew of Serenity face trouble in Our Mrs. Reynolds.",
+      "air_date": "2002-10-04",
+      "runtime": 44
+    },
+    {
+      "id": 60004,
+      "season_number": 1,
+      "episode_number": 4,
+      "name": "Jaynestown",
+      "overview": "Mal and the crew of Serenity face trouble in Jaynestown.",
+      "air_date": "2002-10-18",
+      "runtime": 44
+    },
+    {
+      "id": 60005,
+      "season_number": 1,
+      "episode_number": 5,
+      "name": "Out of Gas",
+      "overview": "Mal and the crew of Serenity face trouble in Out of Gas.",
+      "air_date": "2002-10-25",
+      "runtime": 44
+    },
+    {
+      "id": 60006,
+      "season_number": 1,
+      "episode_number": 6,
+      "name": "Shindig",
+      "overview": "Mal and the crew of Serenity face trouble in Shindig.",
+      "air_date": "2002-11-01",
+      "runtime": 44
+    },
+    {
+      "id": 60007,
+      "season_number": 1,
+      "episode_number": 7,
+      "name": "Safe",
+      "overview": "Mal and the crew of Serenity face trouble in Safe.",
+      "air_date": "2002-11-08",
+      "runtime": 44
+    }
+  ]
+}

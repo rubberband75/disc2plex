@@ -1,0 +1,24 @@
+{
+  "page": 1,
+  "total_results": 3,
+  "results": [
+    {
+      "id": 57243,
+      "name": "Doctor Who",
+      "first_air_date": "2005-03-26",
+      "popularity": 150.0
+    },
+    {
+      "id": 121,
+      "name": "Doctor Who",
+      "first_air_date": "1963-11-23",
+      "popularity": 90.0
+    },
+    {
+      "id": 239770,
+      "name": "Doctor Who",
+      "first_air_date": "2023-11-25",
+      "popularity": 60.0
+    }
+  ]
+}
