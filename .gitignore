@@ -1,0 +1,23 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Runtime output and caches
+.cache/
+manifests/
+
+# Media (never commit video)
+*.mkv
+*.mp4
+*.m2ts
+*.iso

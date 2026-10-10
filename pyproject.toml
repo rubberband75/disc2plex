@@ -1,0 +1,43 @@
+[project]
+name = "disc2plex"
+version = "0.1.0"
+description = "Identify, rename, and organize MakeMKV TV-series rips into a Plex-compliant library."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12",
+]
+
+[project.scripts]
+disc2plex = "disc2plex.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/disc2plex"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
