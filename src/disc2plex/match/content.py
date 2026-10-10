@@ -393,18 +393,21 @@ def apply_evidence(
 def _agreement_counts(
     assignments: Sequence[Assignment], evidence: Evidence, cfg: ContentConfig
 ) -> tuple[int, int]:
-    """Files whose useful transcript answers fit their assignment, and files whose don't."""
-    agree = disagree = 0
+    """Files whose useful transcript answers fit their assignment, and files whose don't.
+
+    An unmatched file naming only episodes that agreeing files already hold (a
+    second cut, deleted scenes) is neutral: it doesn't argue for another start.
+    """
+    answered = []
     for a in assignments:
         ev = evidence.by_file.get(a.file.path)
         useful = ev.useful(cfg.min_answer_confidence) if ev else []
-        if not useful:
-            continue
-        if a.episodes and {answer.episode for answer in useful} <= set(a.episodes):
-            agree += 1
-        else:
-            disagree += 1
-    return agree, disagree
+        if useful:
+            answered.append((a, {answer.episode for answer in useful}))
+    agreeing = [(a, named) for a, named in answered if a.episodes and named <= set(a.episodes)]
+    held = {e for a, _ in agreeing for e in a.episodes}
+    neutral = [a for a, named in answered if not a.episodes and named <= held]
+    return len(agreeing), len(answered) - len(agreeing) - len(neutral)
 
 
 def _combine_one(
@@ -477,10 +480,17 @@ def _combine_one(
         holder = supported[0].file.path.name
         if ev.first_answers and content_conf >= cfg.reassign_min_confidence:
             # Still clear after a second listen: more likely a second copy than a mistake.
+            # Judge by the disc's own episode length, not TMDB's runtime (which may
+            # describe the other cut).
+            what = (
+                "possibly another cut of the same episode (extended/broadcast)"
+                if a.file_class is FileClass.EPISODE
+                else "not episode length, so probably extra material from that episode "
+                "(deleted or extended scenes)"
+            )
             reasons.append(
                 f"content clearly says {label}, but {holder} holds it with evidence of its "
-                "own; possibly another cut of the same episode (extended/broadcast); "
-                "needs review"
+                f"own; {what}; needs review"
             )
         else:
             reasons.append(

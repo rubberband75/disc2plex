@@ -240,7 +240,7 @@ These apply to you (Claude Code) while developing AND to the tool's runtime beha
 6. Log decisions with reasons so a wrong match can be diagnosed afterward.
 
 **While developing:**
-- **Do not run `--apply` against real media.** Use the test fixtures or a throwaway temp directory with tiny dummy files.
+- **Ask before running `--apply` against real media.** Use the test fixtures or a throwaway temp directory with tiny dummy files.
 - Don't commit video files, API keys, or `.env`.
 - Don't run large downloads or install system packages without asking.
 - Ask before adding a new dependency or making a large architectural change.
@@ -419,3 +419,10 @@ When starting, ask the user about these and record answers in this file:
   - Live: Good Place t04 (first answer "Flying", e02) -> e06 at 98% after a second listen; with no disc hint the whole disc is now confident and correct, for 1 extra LLM call.
   - Parks S1 has seven episode-length titles for six episodes: t06 (21:49) and t07 (26:50) are both "Rock Show" (broadcast and extended cut), and t12 (22:53, stereo) is a compilation. Runtime-only matching left t01 out and filed t02-t04 and t06 one episode early at 87%+. Fix: when the aligner leaves an episode-length title unmatched, every match on the disc is capped at review (like a gap), with a "left over" note. With Claude (`--verify low`, no hint), t00-t04 and t07 -> e01-e06 at 98%, and t06/t12 go to review with clearer reasons ("possibly another cut of the same episode" only after a second listen still names it; "excerpts point to different episodes ... probably a compilation"). 8 files checked, 10 calls, ~25k input tokens.
   - Trimmed Parks metadata is in `tests/fixtures/real/parks_s1_d1.json` and `tests/fixtures/tmdb/*8592*`. A replay test uses Claude's real answers.
+- 2026-10-10: First real applies (user asked; the inputs are copies of originals kept on another device): Parks and Recreation S1 (1 disc) and S2 (4 discs) into `outputs/` (gitignored), with `--llm claude --verify all`. All 30 episodes went to the library, each confirmed by transcript at 91-99%. Nothing was skipped or failed. Fixes found along the way:
+  - Play-All detection tries episode-length titles first. With many short extras on a disc, some arbitrary mix of titles also added up to the 2:31 Play-All on S2D1 and didn't line up with its chapters, so it was "unknown" and would have been moved to review.
+  - Start-agreement rule: an unmatched file whose answers name only episodes that agreeing files already hold (a second cut, deleted scenes) is neutral, not a disagreement. S2D4 has broadcast and longer cuts of e23 and e24 and was sent entirely to review because of this.
+  - Duplicate wording: "another cut of the same episode" only for episode-length titles; other lengths read "probably extra material from that episode (deleted or extended scenes)". This is judged by classification, not TMDB runtime, because TMDB may list the other cut's length.
+  - S2D4 put the longer cuts (t09 29:57, t10 25:15, matching TMDB's 30/26 min) in the library; the 22-minute broadcast cuts (t07, t08) are in `_review`. The user may prefer the other cut.
+  - Fixtures: `tests/fixtures/real/parks_s2_d4.json` and `tests/fixtures/tmdb/tv_8592_season_2.json`, with a replay test of Claude's real answers.
+

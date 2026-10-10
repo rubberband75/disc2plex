@@ -208,6 +208,15 @@ def _chapters_align(
     return any(_boundaries_matched(candidate.chapter_starts, order, cfg) for order in orders)
 
 
+def _size_matches(
+    candidate: MediaFile, components: Sequence[MediaFile], cfg: ClassifyConfig
+) -> bool:
+    total = sum(c.duration_seconds for c in components)
+    return _within(
+        candidate.size_bytes, sum(c.size_bytes for c in components), cfg.play_all_size_tolerance
+    ) and _within(candidate.duration_seconds, total, cfg.play_all_strict_duration_tolerance)
+
+
 def _mark_play_all(verdicts: list[_Verdict], cfg: ClassifyConfig) -> None:
     live = [v for v in verdicts if v.file_class is None]
     confirmed: set[Path] = set()
@@ -220,23 +229,39 @@ def _mark_play_all(verdicts: list[_Verdict], cfg: ClassifyConfig) -> None:
             and other.file.path not in confirmed
             and other.file.duration_seconds < candidate.duration_seconds
         ]
-        components = _find_component_subset(
-            candidate.duration_seconds, items, cfg.play_all_duration_tolerance
-        )
-        if components is None:
+        # Episode-length titles first: with many short extras on a disc, some
+        # arbitrary mix of titles also adds up to a Play-All's length, and that
+        # mix won't line up with its chapters.
+        long_items = [i for i in items if i.duration_seconds >= cfg.min_cluster_seconds]
+        attempts = [
+            found
+            for pool in (long_items, items)
+            if (
+                found := _find_component_subset(
+                    candidate.duration_seconds, pool, cfg.play_all_duration_tolerance
+                )
+            )
+        ]
+        if not attempts:
             continue
+        confirmed_attempt = next(
+            (
+                (components, size_match)
+                for components in attempts
+                if (size_match := _size_matches(candidate, components, cfg))
+                or _chapters_align(candidate, components, cfg)
+            ),
+            None,
+        )
+        components = confirmed_attempt[0] if confirmed_attempt else attempts[-1]
+        size_match = confirmed_attempt[1] if confirmed_attempt else False
         total = sum(c.duration_seconds for c in components)
         summary = (
             f"length {format_duration(candidate.duration_seconds)} matches "
             f"{len(components)} titles totalling {format_duration(total)} ({_names(components)})"
         )
         paths = tuple(c.path for c in components)
-        size_match = _within(
-            candidate.size_bytes,
-            sum(c.size_bytes for c in components),
-            cfg.play_all_size_tolerance,
-        ) and _within(candidate.duration_seconds, total, cfg.play_all_strict_duration_tolerance)
-        if size_match or _chapters_align(candidate, components, cfg):
+        if confirmed_attempt:
             v.play_all_of = paths
             v.decide(FileClass.PLAY_ALL, summary)
             v.note(

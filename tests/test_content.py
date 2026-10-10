@@ -682,9 +682,11 @@ def test_scattered_answers_mean_a_compilation() -> None:
 
 
 def test_clear_duplicate_suggests_another_cut() -> None:
-    # Parks and Recreation S1: broadcast and extended cuts of "Rock Show".
+    # Parks and Recreation S1: broadcast and extended cuts of "Rock Show". t06 is
+    # episode length but was left unmatched (t07 holds e06).
+    t06 = assignment("t06", [], 0.0).model_copy(update={"file_class": FileClass.EPISODE})
     out = applied(
-        [assignment("t06", [], 0.0), assignment("t07", [6], 0.9, 27)],
+        [t06, assignment("t07", [6], 0.9, 27)],
         evidence_for(t06=[(6, 0.97)], t07=[(6, 0.97)]),
     )
     assert any("t07.mkv has stronger evidence" in r for r in out["t06"].reasons)
@@ -692,7 +694,7 @@ def test_clear_duplicate_suggests_another_cut() -> None:
     ev = evidence_for(t06=[(6, 0.97), (6, 0.97), (6, 0.93)], t07=[(6, 0.97)])
     first = ev.by_file[Path("/rip/t06.mkv")]
     ev.by_file[Path("/rip/t06.mkv")] = replace(first, first_answers=first.answers[:1])
-    out = applied([assignment("t06", [], 0.0), assignment("t07", [6], 0.9, 27)], ev)
+    out = applied([t06, assignment("t07", [6], 0.9, 27)], ev)
     assert out["t06"].episodes == () and out["t07"].episodes == (EP[6],)
     assert any("another cut of the same episode" in r for r in out["t06"].reasons)
 
@@ -775,3 +777,70 @@ def test_real_parks_disc_with_every_file_checked(
         assert by_stem[stem].status is AssignmentStatus.UNMATCHED
         assert any(phrase in r for r in by_stem[stem].reasons)
     assert sorted(n for n, slices in fake_transcribe if slices == 2) == ["E1_t06", "G1_t12"]
+
+
+def test_clear_duplicate_with_wrong_length_is_extra_material() -> None:
+    # Parks and Recreation S2D1: an 11-minute title that is clearly "Sister City".
+    ev = evidence_for(t14=[(5, 0.97), (5, 0.96), (5, 0.93)], t06=[(5, 0.95)])
+    first = ev.by_file[Path("/rip/t14.mkv")]
+    ev.by_file[Path("/rip/t14.mkv")] = replace(first, first_answers=first.answers[:1])
+    out = applied([assignment("t14", [], 0.0, 11), assignment("t06", [5], 0.9)], ev)
+    assert any("deleted or extended scenes" in r for r in out["t14"].reasons)
+
+
+def test_real_parks_s2_disc4_duplicate_cuts_do_not_contest_the_start(
+    fake_rip: FakeRipBuilder, fake_transcribe: list[tuple[str, int]], tmp_path: Path
+) -> None:
+    # Parks and Recreation S2 disc 4: e23 and e24 each appear twice (broadcast cut
+    # and the longer cut TMDB lists), F1_t17 is more Telethon material, and E2_t11
+    # is a blooper reel. Those duplicates must not count against the inferred start.
+    llm = ReplayLLM(
+        {
+            "C1_t04": ("s02e21", 0.95),
+            "C2_t05": ("s02e22", 0.98),
+            "D1_t07": ("s02e23", 0.93),
+            "D2_t08": ("s02e24", 0.97),
+            "D3_t09": ("s02e23", 0.95),
+            "D4_t10": ("s02e24", 0.95),
+            "F1_t17": ("s02e22", 0.82),
+            "E2_t11": ("none", 0.6),
+        },
+        {
+            "C1_t04": [("s02e21", 0.97)] * 3,
+            "C2_t05": [("s02e22", 0.97)] * 3,
+            "D1_t07": [("s02e23", 0.95), ("s02e23", 0.93), ("s02e23", 0.93)],
+            "D2_t08": [("s02e24", 0.97), ("s02e24", 0.97), ("s02e24", 0.95)],
+            "D3_t09": [("s02e23", 0.95)] * 3,
+            "D4_t10": [("s02e24", 0.97)] * 3,
+            "F1_t17": [("s02e22", 0.80), ("s02e22", 0.92), ("s02e22", 0.85)],
+            "E2_t11": [("none", 0.6)] * 3,
+        },
+    )
+    data = json.loads((FIXTURES / "real" / "parks_s2_d4.json").read_text())
+    rip_dir, probe = fake_rip({n: (i["probe"], i["size_bytes"]) for n, i in data.items()})
+    run = run_plan(
+        PlanRequest(
+            rip_dir=rip_dir,
+            output_root=tmp_path / "lib",
+            tmdb_id=8592,
+            season=2,
+            disc=4,
+            verify=VerifyMode.LOW,
+        ),
+        scanner=lambda path: scan_directory(path, probe=probe),
+        client=FakeTMDB(
+            {
+                "/3/tv/8592": "tv_8592",
+                "/3/tv/8592/episode_groups": "tv_8592_episode_groups",
+                "/3/tv/8592/season/2": "tv_8592_season_2",
+            }
+        ).client(),
+        verifier=_verifier(llm),
+    )
+    by_stem = {a.file.path.stem: a for a in run.match.assignments}
+    for stem, number in {"C1_t04": 21, "C2_t05": 22, "D3_t09": 23, "D4_t10": 24}.items():
+        a = by_stem[stem]
+        assert ([e.episode for e in a.episodes], a.status) == ([number], AssignmentStatus.CONFIDENT)
+    for stem in ("D1_t07", "D2_t08", "F1_t17", "E2_t11"):
+        assert by_stem[stem].status is not AssignmentStatus.CONFIDENT
+    assert not any("disagree about where the disc starts" in n for n in run.match.notes)

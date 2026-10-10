@@ -1,0 +1,2294 @@
+{
+ "C1_t04.mkv": {
+  "size_bytes": 881953216,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "76.943533"
+    },
+    {
+     "start_time": "569.936033"
+    },
+    {
+     "start_time": "955.321033"
+    }
+   ],
+   "format": {
+    "duration": "1296.662000"
+   }
+  }
+ },
+ "C2_t05.mkv": {
+  "size_bytes": 875396381,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "66.232833"
+    },
+    {
+     "start_time": "579.579000"
+    },
+    {
+     "start_time": "943.809533"
+    }
+   ],
+   "format": {
+    "duration": "1293.525000"
+   }
+  }
+ },
+ "D1_t07.mkv": {
+  "size_bytes": 902488587,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "104.771333"
+    },
+    {
+     "start_time": "463.162700"
+    },
+    {
+     "start_time": "817.483333"
+    }
+   ],
+   "format": {
+    "duration": "1326.858000"
+   }
+  }
+ },
+ "D2_t08.mkv": {
+  "size_bytes": 877421313,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "75.575500"
+    },
+    {
+     "start_time": "500.366533"
+    },
+    {
+     "start_time": "843.509333"
+    }
+   ],
+   "format": {
+    "duration": "1297.296000"
+   }
+  }
+ },
+ "D3_t09.mkv": {
+  "size_bytes": 1269155901,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 4,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "157.357200"
+    },
+    {
+     "start_time": "698.364333"
+    },
+    {
+     "start_time": "1176.074900"
+    }
+   ],
+   "format": {
+    "duration": "1796.728000"
+   }
+  }
+ },
+ "D4_t10.mkv": {
+  "size_bytes": 1062253805,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 6,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Surround 5.1"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 4,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "75.575500"
+    },
+    {
+     "start_time": "579.612367"
+    },
+    {
+     "start_time": "1009.608600"
+    }
+   ],
+   "format": {
+    "duration": "1515.480000"
+   }
+  }
+ },
+ "E2_t11.mkv": {
+  "size_bytes": 518873649,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [],
+   "format": {
+    "duration": "918.304000"
+   }
+  }
+ },
+ "E4_t12.mkv": {
+  "size_bytes": 309965481,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [],
+   "format": {
+    "duration": "548.256000"
+   }
+  }
+ },
+ "E5_t03.mkv": {
+  "size_bytes": 106416412,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [],
+   "format": {
+    "duration": "186.240000"
+   }
+  }
+ },
+ "F1_t17.mkv": {
+  "size_bytes": 655589670,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "266.799867"
+    },
+    {
+     "start_time": "609.942667"
+    },
+    {
+     "start_time": "968.567600"
+    }
+   ],
+   "format": {
+    "duration": "1129.862000"
+   }
+  }
+ },
+ "F2_t13.mkv": {
+  "size_bytes": 155260257,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [],
+   "format": {
+    "duration": "263.796000"
+   }
+  }
+ },
+ "F3_t14.mkv": {
+  "size_bytes": 199141600,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [],
+   "format": {
+    "duration": "340.473000"
+   }
+  }
+ },
+ "F4_t15.mkv": {
+  "size_bytes": 207817795,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [],
+   "format": {
+    "duration": "355.988000"
+   }
+  }
+ },
+ "F5_t16.mkv": {
+  "size_bytes": 92572472,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [],
+   "format": {
+    "duration": "158.625000"
+   }
+  }
+ },
+ "G1_t00.mkv": {
+  "size_bytes": 435487152,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [
+    {
+     "start_time": "0.000000"
+    },
+    {
+     "start_time": "79.779700"
+    },
+    {
+     "start_time": "217.183633"
+    },
+    {
+     "start_time": "342.642300"
+    },
+    {
+     "start_time": "458.958500"
+    }
+   ],
+   "format": {
+    "duration": "544.243000"
+   }
+  }
+ },
+ "G3_t01.mkv": {
+  "size_bytes": 119312762,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [],
+   "format": {
+    "duration": "133.399000"
+   }
+  }
+ },
+ "G4_t02.mkv": {
+  "size_bytes": 113826898,
+  "probe": {
+   "streams": [
+    {
+     "index": 0,
+     "codec_type": "video",
+     "codec_name": "mpeg2video",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 1,
+     "codec_type": "audio",
+     "codec_name": "ac3",
+     "channels": 2,
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng",
+      "title": "Stereo"
+     }
+    },
+    {
+     "index": 2,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "eng"
+     }
+    },
+    {
+     "index": 3,
+     "codec_type": "subtitle",
+     "codec_name": "dvd_subtitle",
+     "disposition": {
+      "default": 0,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0
+     },
+     "tags": {
+      "language": "spa"
+     }
+    }
+   ],
+   "chapters": [],
+   "format": {
+    "duration": "121.454000"
+   }
+  }
+ }
+}

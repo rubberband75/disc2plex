@@ -318,3 +318,23 @@ def test_messy_disc() -> None:
         "DISC1_t06.mkv": JUNK,
         "DISC1_t07.mkv": JUNK,
     }
+
+
+def test_play_all_found_among_many_extras() -> None:
+    # Parks and Recreation S2 disc 1: seven ~21.6-minute episodes, a 2:31 Play-All
+    # (chapters at every episode boundary) and a pile of short extras. Some mix of
+    # episodes and extras also adds up to 2:31, but only the episodes line up.
+    minutes = [21.61, 21.61, 21.62, 21.55, 21.53, 21.48, 21.59]
+    eps = [make_media(f"t{i + 1:02d}.mkv", m) for i, m in enumerate(minutes)]
+    extras = [
+        make_media(f"t{10 + i}.mkv", m)
+        for i, m in enumerate([5.24, 8.07, 12.40, 6.32, 8.56, 6.05, 11.00, 2.88, 5.80])
+    ]
+    starts, offset = [], 0.0
+    for m in minutes:
+        starts += [offset + k * m / 4 for k in range(4)]
+        offset += m
+    play_all = make_media("t09.mkv", offset, chapters=starts, size=1)  # size doesn't confirm
+    result = classify([*eps, play_all, *extras])
+    assert classes(result)["t09.mkv"] is PLAY_ALL
+    assert set(item(result, "t09.mkv").play_all_of) == {e.path for e in eps}
