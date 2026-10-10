@@ -12,7 +12,9 @@ from rich.table import Table
 from disc2plex.models import (
     AssignmentStatus,
     ClassifyResult,
+    EntryStatus,
     FileClass,
+    Manifest,
     MediaFile,
     ScanResult,
     SeasonEpisodes,
@@ -266,3 +268,35 @@ def plan_to_json(run: PlanRun) -> str:
         "plan": run.plan.model_dump(mode="json"),
     }
     return json.dumps(payload, indent=2)
+
+
+_ENTRY_STYLES = {
+    EntryStatus.PENDING: "dim",
+    EntryStatus.DONE: "green",
+    EntryStatus.SKIPPED: "yellow",
+    EntryStatus.FAILED: "red",
+    EntryStatus.UNDONE: "cyan",
+}
+
+
+def render_manifest(manifest: Manifest, console: Console, *, title: str) -> None:
+    """Print each manifest entry with its outcome."""
+    table = Table(title=title)
+    table.add_column("Source")
+    table.add_column("Action")
+    table.add_column("Result")
+    table.add_column("Destination (relative to output root)")
+    table.add_column("Note")
+    for e in manifest.entries:
+        style = _ENTRY_STYLES[e.status]
+        table.add_row(
+            e.source.name,
+            e.action.value,
+            f"[{style}]{e.status.value}[/]",
+            _relative(e.destination, manifest.output_root),
+            e.message,
+        )
+    console.print(table)
+    counts = {s: sum(1 for e in manifest.entries if e.status is s) for s in EntryStatus}
+    summary = ", ".join(f"{n} {s.value}" for s, n in counts.items() if n)
+    console.print(f"Summary: {summary or 'nothing to do'}")

@@ -1,8 +1,7 @@
 """Typer entry point for the ``disc2plex`` command.
 
-Commands not yet implemented are declared so ``--help`` documents the intended
-interface; they exit with a "not implemented" message. Pipeline logic lives in
-``pipeline.py``; this module only parses options, prompts, and prints.
+Pipeline logic lives in ``pipeline.py`` and file operations in ``apply.py``;
+this module only parses options, prompts, and prints.
 """
 
 from __future__ import annotations
@@ -22,13 +21,21 @@ import typer
 from rich.console import Console
 
 from disc2plex import __version__
+from disc2plex.apply import (
+    ApplyError,
+    apply_plan,
+    default_manifest_dir,
+    read_manifest,
+    undo_manifest,
+)
 from disc2plex.classify import classify
 from disc2plex.config import load_dotenv
-from disc2plex.models import PlanAction, ScanResult, ShowSummary
+from disc2plex.models import EntryStatus, PlanAction, ScanResult, ShowSummary
 from disc2plex.pipeline import PlanRequest, PlanRun, parse_disc_range, run_plan
 from disc2plex.plan import ExtrasMode, PlanOptions
 from disc2plex.report import (
     plan_to_json,
+    render_manifest,
     render_plan,
     render_scan,
     render_search_results,
@@ -137,11 +144,6 @@ def require_ffprobe() -> None:
             fg=typer.colors.RED,
         )
         raise typer.Exit(code=1)
-
-
-def _not_implemented(milestone: int) -> None:
-    typer.secho(f"Not implemented yet (milestone {milestone}).", err=True, fg=typer.colors.YELLOW)
-    raise typer.Exit(code=1)
 
 
 @app.callback()
@@ -338,7 +340,47 @@ def apply(
 ) -> None:
     """Build the plan, then execute it if --apply is given."""
     require_ffprobe()
-    _not_implemented(7)
+    request = _plan_request(
+        rip_dir, output, show, year, tmdb_id, season, disc, disc_episodes, order,
+        action, include_titles, extras,
+    )  # fmt: skip
+    terminal = _stdin_is_terminal()
+    run = _run_pipeline(request, interactive=not yes and not json_out and terminal)
+    console = Console()
+    if json_out:
+        typer.echo(plan_to_json(run))
+    else:
+        render_plan(run, console, show_evidence=not do_apply)
+    if run.plan.errors:
+        raise typer.Exit(code=1)
+    if not do_apply:
+        if not json_out:
+            console.print("Dry run only. Re-run with [bold]--apply[/bold] to execute this plan.")
+        return
+
+    count = sum(1 for i in run.plan.items if i.action is not PlanAction.SKIP)
+    if not yes:
+        if not terminal:
+            raise _fail("refusing to apply without confirmation; pass --yes")
+        if not typer.confirm(f"Apply {count} file operation(s) under {request.output_root}?"):
+            raise typer.Exit(code=1)
+    args: dict[str, str | int | float | bool | None] = {
+        "show": show, "tmdb_id": run.show.tmdb_id, "season": run.season.season,
+        "order": order, "disc": disc, "disc_episodes": disc_episodes,
+        "action": action.value, "extras": extras.value, "include_titles": include_titles,
+    }  # fmt: skip
+    try:
+        manifest, manifest_path = apply_plan(
+            run.plan, request.rip_dir, default_manifest_dir(), args=args
+        )
+    except ApplyError as exc:
+        raise _fail(str(exc)) from exc
+    render_manifest(manifest, console, title="Applied")
+    # Plain echo so long paths aren't wrapped mid-word (they get copy-pasted).
+    typer.echo(f"Manifest: {manifest_path}")
+    typer.echo(f"Undo with: disc2plex undo '{manifest_path}'")
+    if any(e.status is EntryStatus.FAILED for e in manifest.entries):
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -347,9 +389,34 @@ def undo(
         Path, typer.Argument(exists=True, dir_okay=False, help="Manifest JSON from an apply run.")
     ],
     yes: YesOpt = False,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Show what would be reversed without doing it.")
+    ] = False,
 ) -> None:
     """Reverse a previous apply using its manifest."""
-    _not_implemented(7)
+    try:
+        loaded = read_manifest(manifest)
+    except ApplyError as exc:
+        raise _fail(str(exc)) from exc
+    console = Console()
+    todo = [e for e in loaded.entries if e.status is EntryStatus.DONE]
+    render_manifest(loaded, console, title=f"Run {loaded.run_id} ({loaded.created_at})")
+    if not todo:
+        console.print("Nothing to undo.")
+        return
+    if dry_run:
+        console.print(f"Dry run: {len(todo)} operation(s) would be reversed.")
+        return
+    if not yes:
+        if not _stdin_is_terminal():
+            raise _fail("refusing to undo without confirmation; pass --yes")
+        if not typer.confirm(f"Reverse {len(todo)} operation(s)?"):
+            raise typer.Exit(code=1)
+    result = undo_manifest(loaded, manifest)
+    render_manifest(result, console, title="Undo result")
+    if any(e.status is EntryStatus.DONE for e in result.entries):
+        console.print("[yellow]Some operations could not be reversed; see notes above.[/yellow]")
+        raise typer.Exit(code=1)
 
 
 @contextmanager

@@ -200,8 +200,8 @@ Only run for files that are low-confidence, ambiguous, or when `--verify all` is
 ```
 disc2plex scan   <rip_dir>                       # show probed files + classification
 disc2plex plan   <rip_dir> --show "Name" --output <library> [opts]  # full pipeline, dry-run
-disc2plex apply  <rip_dir> --show "Name" [opts]  # same as plan, then execute
-disc2plex undo   <manifest.json>                 # reverse a previous apply
+disc2plex apply  <rip_dir> --show "Name" --output <library> [--apply] [--yes]  # plan, then execute
+disc2plex undo   <manifest.json> [--dry-run] [--yes]  # reverse a previous apply
 disc2plex tmdb   search "Show Name"              # helper to find TMDB IDs
 disc2plex tmdb   show <tmdb-id>                  # seasons + episode-group IDs for --order
 disc2plex tmdb   season <tmdb-id> <n> [--order]  # episode list in the chosen order
@@ -372,5 +372,11 @@ When starting, ask the user about these and record answers in this file:
   - Classification now also receives the season's individual TMDB runtimes: a "suspected Play-All" or odd-length title matching a specific TMDB episode runtime (±5%) is treated as an episode (e.g. an 86-min pilot). Play-All size confirmation tightened to size ±1% AND duration ±1%, because same-show episodes have similar bitrates and looser size matches happen by chance.
   - Plan routing: confident episodes -> library; needs-review/unmatched/unknown -> `<output>/_review/<disc>/`; extras -> `<output>/_extras_review/<disc>/` (`--extras skip` leaves them; `season0` falls back to review until M9); Play-All/junk/unprobeable -> left in place. Duplicate destinations are plan errors (exit 1). Existing destinations become `skip`. Multi-episode files whose episodes aren't consecutive in aired numbering (possible with DVD order) go to review.
   - `plan` requires `--output` (until the config file exists in M10) and `--show` or `--tmdb-id`; an ambiguous show triggers a numbered prompt on a TTY, or an error listing candidates with `--yes`/`--json`/non-TTY.
+- 2026-10-10: Milestone 7 (apply/manifest/undo) done. Verified with unit tests plus a real `apply --apply` and `undo` round trip on generated MKVs in a scratch directory (checksums identical afterwards). Never run against real media.
+  - Review folders stay inside the library root (user said continue; my recommended option). `apply` writes `.plexignore` (`*`, `*/*`, `*/*/*`; Plex only matches slash-less patterns in the same folder) into `_review/` and `_extras_review/` when it puts files there. An existing `.plexignore` is never touched.
+  - Manifests live in `$XDG_DATA_HOME/disc2plex/manifests/` (default `~/.local/share/...`), not a cwd-relative `manifests/` (section 7). Each one is written before the first operation and rewritten atomically after every operation; an interrupted run can be undone.
+  - No-clobber placement: move = `os.link` + unlink source (atomic EEXIST if the destination is taken). Without hardlink support (EPERM/ENOTSUP...): exists-check + rename. Across filesystems (EXDEV): copy to a `.disc2plex-partial-*` temp beside the destination, verify size, no-clobber place, then unlink the source. If the source can't be removed, the placement is rolled back.
+  - Before each operation: the source must still exist (else skipped), the destination (including a dangling symlink) must not exist (else skipped, "not overwritten"), and containment is re-checked with `realpath`, so symlinked folders can't escape. `apply` refuses if the output root doesn't exist (typo or unmounted share) rather than creating it.
+  - `apply` without `--apply` is a dry run; with `--apply` it asks for confirmation on a TTY and requires `--yes` otherwise. `undo` has `--dry-run`, the same confirmation rules, reverses newest-first, never overwrites the original location, and removes copies/hardlinks only if the original still exists and the copy's size/inode are unchanged. It then removes our `.plexignore` (if unchanged) and any directories we created that are empty.
 
 

@@ -241,6 +241,46 @@ class Plan(_Frozen):
     warnings: tuple[str, ...] = ()
 
 
+class EntryStatus(StrEnum):
+    PENDING = "pending"
+    DONE = "done"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+    UNDONE = "undone"
+
+
+class ManifestEntry(BaseModel):
+    """One planned file operation and what actually happened to it.
+
+    Mutable on purpose: the manifest is rewritten after every operation so an
+    interrupted run can still be undone.
+    """
+
+    source: Path
+    destination: Path
+    action: PlanAction
+    status: EntryStatus = EntryStatus.PENDING
+    message: str = ""
+    # Recorded after placing the file, so undo can tell if it changed since.
+    size_bytes: int | None = None
+    inode: int | None = None
+
+
+class Manifest(BaseModel):
+    run_id: str
+    created_at: str
+    tool_version: str
+    rip_dir: Path
+    output_root: Path
+    args: dict[str, str | int | float | bool | None] = {}
+    entries: list[ManifestEntry] = []
+    # Directories and marker files this run created (removed on undo if untouched).
+    created_dirs: list[Path] = []
+    created_files: list[Path] = []
+    finished: bool = False
+    undone_at: str | None = None
+
+
 class ScanFailure(_Frozen):
     """A file that could not be probed (corrupt, truncated, not really video...)."""
 

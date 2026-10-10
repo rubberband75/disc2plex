@@ -22,14 +22,15 @@ uv run disc2plex --help
 
 ## Usage
 
-`scan`, `plan`, and the `tmdb` helpers work today; `apply` and `undo` are coming next.
+All commands work. Matching uses title order and runtimes; content verification
+(speech transcription) is planned.
 
 ```bash
 disc2plex scan ./sample_rip
 disc2plex plan ./sample_rip --show "Show Name" --season 1 --disc-episodes 1-4 --output "/srv/plex/TV Shows"
 disc2plex plan ./FIREFLY_D1 --show Firefly --disc 1 --order dvd --output "/srv/plex/TV Shows"
-disc2plex apply ./sample_rip --show "Show Name" --season 1 --apply
-disc2plex undo manifests/<run>.json
+disc2plex apply ./FIREFLY_D1 --show Firefly --disc 1 --order dvd --output "/srv/plex/TV Shows" --apply
+disc2plex undo ~/.local/share/disc2plex/manifests/<run>.json
 disc2plex tmdb search "Show Name"
 disc2plex tmdb show 1437                 # seasons and episode groups (DVD order IDs)
 disc2plex tmdb season 1437 1 --order dvd
@@ -39,6 +40,10 @@ disc2plex tmdb season 1437 1 --order dvd
 match is, and the evidence behind it. Files it isn't confident about are routed to
 `<output>/_review/<disc>/` rather than guessed. Pinning the disc position with
 `--disc-episodes` (or `--disc 1`) makes matches much more confident.
+
+`apply` never overwrites an existing file, never deletes anything, and records
+every operation in a manifest (under `~/.local/share/disc2plex/manifests/`) that
+`undo` can reverse. Without `--apply` it only prints the plan.
 
 ## Development
 

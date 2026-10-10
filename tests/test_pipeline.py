@@ -274,3 +274,98 @@ def test_cli_plan_ambiguous_prompt(
     assert "Which one?" in result.output
     assert "Enter a number from 1 to 3" in result.output
     assert "/3/tv/121" in fake.paths()
+
+
+# --- CLI apply / undo (inside tmp_path only) ----------------------------------
+
+
+def _apply_args(rip_dir: Path, library: Path, *extra: str) -> list[str]:
+    return [
+        "apply", str(rip_dir), "--show", "Firefly", "--disc", "1", "--order", "dvd",
+        "--output", str(library), *extra,
+    ]  # fmt: skip
+
+
+@pytest.fixture
+def library(cli_disc: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
+    path = tmp_path / "library"
+    path.mkdir()
+    return path
+
+
+def _snapshot(folder: Path) -> dict[str, int]:
+    return {str(p.relative_to(folder)): p.stat().st_size for p in folder.rglob("*") if p.is_file()}
+
+
+def test_cli_apply_without_flag_is_dry_run(cli_disc: Path, library: Path) -> None:
+    before = _snapshot(cli_disc)
+    result = runner.invoke(cli.app, _apply_args(cli_disc, library))
+    assert result.exit_code == 0, result.output
+    assert "Re-run with --apply" in result.output
+    assert _snapshot(cli_disc) == before
+    assert list(library.iterdir()) == []
+
+
+def test_cli_apply_then_undo_round_trip(cli_disc: Path, library: Path, tmp_path: Path) -> None:
+    before = _snapshot(cli_disc)
+    result = runner.invoke(cli.app, _apply_args(cli_disc, library, "--apply", "--yes"))
+    assert result.exit_code == 0, result.output
+    season = library / SHOW_DIR / "Season 01"
+    assert (season / "Firefly (2002) - s01e11 - Serenity.mkv").exists()
+    assert (library / "_extras_review" / "rip" / "FIREFLY_D1_t05.mkv").exists()
+    assert (library / "_extras_review" / ".plexignore").exists()
+    assert (cli_disc / "FIREFLY_D1_t00.mkv").exists()  # Play-All left in place
+
+    manifests = list((tmp_path / "data" / "disc2plex" / "manifests").glob("*.json"))
+    assert len(manifests) == 1
+    assert "disc2plex undo" in result.output
+
+    dry = runner.invoke(cli.app, ["undo", str(manifests[0]), "--dry-run"])
+    assert dry.exit_code == 0 and "would be reversed" in dry.output
+    assert (season / "Firefly (2002) - s01e11 - Serenity.mkv").exists()
+
+    undo = runner.invoke(cli.app, ["undo", str(manifests[0]), "--yes"])
+    assert undo.exit_code == 0, undo.output
+    assert _snapshot(cli_disc) == before
+    assert list(library.iterdir()) == []
+
+    again = runner.invoke(cli.app, ["undo", str(manifests[0]), "--yes"])
+    assert again.exit_code == 0 and "Nothing to undo" in again.output
+
+
+def test_cli_apply_requires_confirmation_when_not_a_terminal(cli_disc: Path, library: Path) -> None:
+    result = runner.invoke(cli.app, _apply_args(cli_disc, library, "--apply"))
+    assert result.exit_code == 1
+    assert "pass --yes" in result.output
+    assert list(library.iterdir()) == []
+
+
+@pytest.mark.parametrize(("answer", "moved"), [("n\n", False), ("y\n", True)])
+def test_cli_apply_interactive_confirmation(
+    cli_disc: Path, library: Path, monkeypatch: pytest.MonkeyPatch, answer: str, moved: bool
+) -> None:
+    monkeypatch.setattr(cli, "_stdin_is_terminal", lambda: True)
+    result = runner.invoke(cli.app, _apply_args(cli_disc, library, "--apply"), input=answer)
+    assert "Apply 5 file operation(s)" in result.output
+    assert (library / SHOW_DIR).exists() is moved
+    assert (result.exit_code == 0) is moved
+
+
+def test_cli_apply_refuses_missing_output_root(
+    cli_disc: Path, library: Path, tmp_path: Path
+) -> None:
+    result = runner.invoke(
+        cli.app, _apply_args(cli_disc, tmp_path / "unmounted-share", "--apply", "--yes")
+    )
+    assert result.exit_code == 1
+    assert "does not exist" in result.output
+    assert not (tmp_path / "unmounted-share").exists()
+
+
+def test_cli_undo_bad_manifest(tmp_path: Path) -> None:
+    bad = tmp_path / "bad.json"
+    bad.write_text("nope")
+    result = runner.invoke(cli.app, ["undo", str(bad), "--yes"])
+    assert result.exit_code == 1
+    assert "cannot read manifest" in result.output

@@ -23,6 +23,12 @@ def config_dir() -> Path:
     return Path(base) / "disc2plex"
 
 
+def data_dir() -> Path:
+    """Base data directory: ``$XDG_DATA_HOME/disc2plex`` (default ``~/.local/share/disc2plex``)."""
+    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+    return Path(base) / "disc2plex"
+
+
 def parse_dotenv(text: str) -> dict[str, str]:
     """Parse simple ``KEY=VALUE`` lines. Supports comments, ``export``, and quoted values."""
     values: dict[str, str] = {}
