@@ -40,9 +40,9 @@ WHISPER_DEVICES = ("auto", "cpu", "cuda")
 _CUDA_COMPUTE_TYPES = ("float16", "int8_float32", "int8", "float32")
 # When a passage decodes badly, Whisper retries it by sampling this many
 # candidates and keeping the best. On the GPU, sampling the default 5 at once
-# takes over 500 MB more memory than anything else in a run (measured with
-# `small`: about 0.7 GB otherwise), which is exactly what runs out when a local
-# LLM shares the card. Two keep the retry and fit.
+# is the most memory a run ever needs (measured with `small`: over 1 GB, and
+# out of memory with 1.2 GB free, against 0.75 GB with 2), which is exactly
+# what runs out when a local LLM shares the card. Two keep the retry and fit.
 _CPU_BEST_OF = 5
 _CUDA_BEST_OF = 2
 FFMPEG_TIMEOUT_SECONDS = 120
