@@ -1,0 +1,205 @@
+{
+ "season_number": 6,
+ "episodes": [
+  {
+   "id": 397716,
+   "season_number": 6,
+   "episode_number": 1,
+   "name": "London",
+   "overview": "Leslie wins an award from an international Women in Government organization, and travels to London with Ben, Andy, April and Ron to accept it.",
+   "runtime": 44,
+   "air_date": "2013-09-26",
+   "order": null
+  },
+  {
+   "id": 397717,
+   "season_number": 6,
+   "episode_number": 2,
+   "name": "The Pawnee-Eagleton Tip-Off Classic",
+   "overview": "Ben, Leslie and Chris meet with Eagleton city councilor Ingrid de Forest to discuss financial matters; Ann brings April to vet school orientation; Ron tries to get off the grid.",
+   "runtime": 22,
+   "air_date": "2013-10-03",
+   "order": null
+  },
+  {
+   "id": 397718,
+   "season_number": 6,
+   "episode_number": 3,
+   "name": "Doppelgängers",
+   "overview": "Leslie pairs up the Pawnee Parks employees with their Eagleton counterparts. Meanwhile Ben and Chris reunite for an accounting project, and Ann reveals her plans for the future.",
+   "runtime": 22,
+   "air_date": "2013-10-10",
+   "order": null
+  },
+  {
+   "id": 397719,
+   "season_number": 6,
+   "episode_number": 4,
+   "name": "Gin It Up!",
+   "overview": "Leslie tries to calm a minor scandal that gets blown out of proportion. Tom tries to impress a new love interest, while Ben convinces Ron to prepare a will.",
+   "runtime": 22,
+   "air_date": "2013-10-17",
+   "order": null
+  },
+  {
+   "id": 397720,
+   "season_number": 6,
+   "episode_number": 5,
+   "name": "Filibuster",
+   "overview": "Leslie throws Ben a birthday bash but is forced to leave early for an emergency late-night filibuster. Tom tries to make some memories with his new girlfriend, Ron and Donna go hunting. April reconnects with Andy.",
+   "runtime": 22,
+   "air_date": "2013-11-14",
+   "order": null
+  },
+  {
+   "id": 967015,
+   "season_number": 6,
+   "episode_number": 6,
+   "name": "Recall Vote",
+   "overview": "Leslie prepares a haunted house with Ben, Ann and Chris for Halloween on the day of the recall vote. Meanwhile, Tom fears the end of Rent-A-Swag and persuades Ron to help save his business.",
+   "runtime": 22,
+   "air_date": "2013-11-14",
+   "order": null
+  },
+  {
+   "id": 968086,
+   "season_number": 6,
+   "episode_number": 7,
+   "name": "Fluoride",
+   "overview": "Leslie tries to complete some of her biggest city council goals, like hosting an NFL Play 60 event with the Indianapolis Colts, and trying to add fluoride to Pawnee's drinking water. Meanwhile, Chris and Ron attempt to bond while building cribs for their future children.",
+   "runtime": 22,
+   "air_date": "2013-11-21",
+   "order": null
+  },
+  {
+   "id": 968334,
+   "season_number": 6,
+   "episode_number": 8,
+   "name": "The Cones of Dunshire",
+   "overview": "Leslie faces off with Councilman Jamm; Ben gets a new hobby; Tom, April and Donna help Ron sell his cabin.",
+   "runtime": 22,
+   "air_date": "2013-11-21",
+   "order": null
+  },
+  {
+   "id": 969980,
+   "season_number": 6,
+   "episode_number": 9,
+   "name": "Second Chunce",
+   "overview": "Leslie comes to terms with her last day in office and plans for the future with Ben. Chris and Ann find out the sex of their child, Andy comes home from London, and Tom looks to the future.",
+   "runtime": 22,
+   "air_date": "2014-01-09",
+   "order": null
+  },
+  {
+   "id": 970336,
+   "season_number": 6,
+   "episode_number": 10,
+   "name": "New Beginnings",
+   "overview": "Leslie and Ben both face new challenges on the first day of new jobs. Donna, April and Andy play a prank on Ben, while Tom prepares for a big presentation. Meanwhile Ann and Chris contemplate taking a big leap together.",
+   "runtime": 22,
+   "air_date": "2014-01-16",
+   "order": null
+  },
+  {
+   "id": 970527,
+   "season_number": 6,
+   "episode_number": 11,
+   "name": "Farmers Market",
+   "overview": "Leslie fights with Ben over questionable sales techniques at the local farmers market. Ann searches for a way to vent about the annoying aspects of pregnancy, while April supports Andy in a new creative venture.",
+   "runtime": 22,
+   "air_date": "2014-01-23",
+   "order": null
+  },
+  {
+   "id": 970780,
+   "season_number": 6,
+   "episode_number": 12,
+   "name": "Ann and Chris",
+   "overview": "On Ann and Chris's last night in Pawnee, Leslie throws a grand farewell party and attempts to fulfill one last promise. Meanwhile, Tom, Ben, Ron and Andy struggle to find the perfect going away gift for Chris.",
+   "runtime": 22,
+   "air_date": "2014-01-30",
+   "order": null
+  },
+  {
+   "id": 971846,
+   "season_number": 6,
+   "episode_number": 13,
+   "name": "Anniversaries",
+   "overview": "Ben attempts to surprise Leslie with a special anniversary gift. Tom and Adam try to help Leslie bring positive light to the Pawnee-Eagleton merger, while April asserts her new authority as Donna's boss.",
+   "runtime": 22,
+   "air_date": "2014-02-27",
+   "order": null
+  },
+  {
+   "id": 971991,
+   "season_number": 6,
+   "episode_number": 14,
+   "name": "The Wall",
+   "overview": "Leslie's efforts to take down the wall separating Eagleton and Pawnee yield unexpected results; Ben and Tom meet with possible sponsors for the concert; Ron finds a new hobby.",
+   "runtime": 22,
+   "air_date": "2014-03-06",
+   "order": null
+  },
+  {
+   "id": 972807,
+   "season_number": 6,
+   "episode_number": 15,
+   "name": "New Slogan",
+   "overview": "Leslie aims to create a new town slogan, but runs afoul of local shock jocks. Andy scouts bands to play the Unity Concert and discovers an interesting secret about Ron, while Tom looks for a restaurant locale with Donna and April.",
+   "runtime": 22,
+   "air_date": "2014-03-13",
+   "order": null
+  },
+  {
+   "id": 972808,
+   "season_number": 6,
+   "episode_number": 16,
+   "name": "Galentine's Day",
+   "overview": "Leslie throws a hasty Galentine's Day in an attempt to find a replacement for Ann. Tom and Ben look to finalize a deal on tents for the Unity Concert, while Ron finds himself looking after Andy.",
+   "runtime": 22,
+   "air_date": "2014-03-20",
+   "order": null
+  },
+  {
+   "id": 973398,
+   "season_number": 6,
+   "episode_number": 17,
+   "name": "Prom",
+   "overview": "Leslie helps organize the high school's Senior Prom, and battles with Ron over the future employment of a bright high school senior. Andy takes an unwilling April as his date, and Tom is tasked with DJ'ing and agrees to let Ben help.",
+   "runtime": 22,
+   "air_date": "2014-04-03",
+   "order": null
+  },
+  {
+   "id": 973780,
+   "season_number": 6,
+   "episode_number": 18,
+   "name": "Flu Season 2",
+   "overview": "In the midst of flu season, a sick Leslie and Andy struggle to book performers for the Unity Concert. Meanwhile, Tom heads to a wine competition in search of a sommelier for his new restaurant, and Ben seeks drunken help from Ron with a personal problem.",
+   "runtime": 22,
+   "air_date": "2014-04-10",
+   "order": null
+  },
+  {
+   "id": 974114,
+   "season_number": 6,
+   "episode_number": 19,
+   "name": "One in 8,000",
+   "overview": "Leslie and Ben run a charity auction to raise funds for the unity concert. April steps in to manage Andy's schedule, while Donna asks Ron for help with her ex-boyfriend.",
+   "runtime": 22,
+   "air_date": "2014-04-17",
+   "order": null
+  },
+  {
+   "id": 974342,
+   "season_number": 6,
+   "episode_number": 20,
+   "name": "Moving Up",
+   "overview": "Leslie, Ben, and Andy head to San Francisco for a National Parks Conference. Tom opens his restaurant, Ron has another run-in with his ex-wife Tammy 2, Andy lives a rock and roll fantasy, and Leslie makes a huge decision about her future.",
+   "runtime": 44,
+   "air_date": "2014-04-24",
+   "order": null
+  }
+ ]
+}

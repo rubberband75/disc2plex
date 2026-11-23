@@ -844,3 +844,55 @@ def test_real_parks_s2_disc4_duplicate_cuts_do_not_contest_the_start(
     for stem in ("D1_t07", "D2_t08", "F1_t17", "E2_t11"):
         assert by_stem[stem].status is not AssignmentStatus.CONFIDENT
     assert not any("disagree about where the disc starts" in n for n in run.match.notes)
+
+
+def test_real_parks_s6_disc1_long_premiere_is_asked_about_as_one_episode(
+    fake_rip: FakeRipBuilder, fake_transcribe: list[tuple[str, int]], tmp_path: Path
+) -> None:
+    # What a local Qwen3.6-35B answered in the live run (verify all, no disc hint).
+    # C1_t01 is the 43-minute premiere "London": one episode, so one excerpt and no
+    # "probably holds two consecutive episodes" prompt. Asked as two halves, its
+    # Pawnee scenes were taken for other episodes and it went to review.
+    llm = ReplayLLM(
+        {
+            "C1_t01": ("s06e01", 0.95),
+            "C3_t02": ("s06e02", 0.95),
+            "C5_t03": ("s06e03", 0.95),
+            "F1_t04": ("s06e04", 0.95),
+            "F3_t05": ("s06e05", 0.95),
+            "F5_t06": ("s06e06", 0.95),
+            "G1_t07": ("s06e07", 0.95),
+            "G3_t08": ("s06e08", 0.95),
+            "H1_t09": ("s06e06", 0.95),
+        },
+        {"H1_t09": [("s06e06", 0.95), ("s06e06", 0.98), ("s06e06", 0.95)]},
+    )
+    data = json.loads((FIXTURES / "real" / "parks_s6_d1.json").read_text())
+    rip_dir, probe = fake_rip({n: (i["probe"], i["size_bytes"]) for n, i in data.items()})
+    run = run_plan(
+        PlanRequest(
+            rip_dir=rip_dir,
+            output_root=tmp_path / "lib",
+            tmdb_id=8592,
+            season=6,
+            verify=VerifyMode.ALL,
+        ),
+        scanner=lambda path: scan_directory(path, probe=probe),
+        client=FakeTMDB(
+            {
+                "/3/tv/8592": "tv_8592",
+                "/3/tv/8592/episode_groups": "tv_8592_episode_groups",
+                "/3/tv/8592/season/6": "tv_8592_season_6",
+            }
+        ).client(),
+        verifier=_verifier(llm),
+    )
+    by_stem = {a.file.path.stem: a for a in run.match.assignments}
+    stems = ["C1_t01", "C3_t02", "C5_t03", "F1_t04", "F3_t05", "F5_t06", "G1_t07", "G3_t08"]
+    for number, stem in enumerate(stems, start=1):
+        a = by_stem[stem]
+        assert ([e.episode for e in a.episodes], a.status) == ([number], AssignmentStatus.CONFIDENT)
+    assert by_stem["H1_t09"].status is not AssignmentStatus.CONFIDENT
+    assert any("another cut" in r for r in by_stem["H1_t09"].reasons)
+    assert ("C1_t01", 1) in fake_transcribe
+    assert [stem for stem, slices in fake_transcribe if slices == 2] == ["H1_t09"]

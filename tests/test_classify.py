@@ -192,6 +192,48 @@ def test_double_length_whose_chapters_rule_out_play_all() -> None:
     assert any("chapters don't line up" in r for r in double.reasons)
 
 
+SAME_SIZE = 722_000_000
+
+
+def same_bitrate_episodes() -> list[MediaFile]:
+    """Four episodes a few seconds apart in length and all but identical in size."""
+    lengths = {"t02.mkv": 21.5, "t03.mkv": 21.55, "t04.mkv": 21.6, "t05.mkv": 21.65}
+    return [make_media(name, minutes, size=SAME_SIZE) for name, minutes in lengths.items()]
+
+
+def test_matching_sizes_do_not_outvote_chapters_that_miss_the_boundary() -> None:
+    # Parks and Recreation S6 disc 1: every episode is 21:35 at the same bitrate,
+    # so any two of them match the 43-minute premiere in length *and* size. Its
+    # chapters have no mark at 21:35, where a Play-All would start episode two.
+    premiere = make_media("t01.mkv", 43.1, size=2 * SAME_SIZE, chapters=[0, 4.6, 18.3, 30.9])
+    result = classify([premiere, *same_bitrate_episodes()])
+    long_title = item(result, "t01.mkv")
+    assert long_title.file_class is EPISODE
+    assert long_title.episode_count_hint == 2
+    assert any("chapters don't line up" in r for r in long_title.reasons)
+
+
+def test_matching_sizes_still_confirm_a_play_all_with_a_chapter_at_the_boundary() -> None:
+    play_all = make_media("t01.mkv", 43.1, size=2 * SAME_SIZE, chapters=[0, 4.6, 21.5, 30.9])
+    result = classify([play_all, *same_bitrate_episodes()])
+    assert classes(result)["t01.mkv"] is PLAY_ALL
+    assert "size also matches" in " ".join(item(result, "t01.mkv").reasons)
+
+
+def test_short_title_that_adds_up_to_two_extras_is_an_extra() -> None:
+    # A 4:25 title equal to two 2-minute featurettes is extra material whether
+    # or not it is their "play all"; it doesn't belong with the unknowns.
+    files = [
+        *four_episodes(),
+        make_media("t10.mkv", 2.2),
+        make_media("t11.mkv", 2.25),
+        make_media("t12.mkv", 4.4),
+    ]
+    result = classify(files)
+    assert classes(result)["t12.mkv"] is EXTRA
+    assert any("possible Play-All" in r for r in item(result, "t12.mkv").reasons)
+
+
 def test_double_length_equal_to_two_episodes_without_chapters_is_unknown() -> None:
     # Could be a two-episode Play-All or a two-parter; don't guess.
     files = [*four_episodes(), make_media("t04.mkv", 43.1 + 44.0, size=5)]

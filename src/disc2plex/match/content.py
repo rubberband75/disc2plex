@@ -53,6 +53,8 @@ from disc2plex.transcribe import (
 log = logging.getLogger(__name__)
 
 NONE_CODE = "none"
+# Runtime fit at which the heuristic says a file "matches" its episode's TMDB runtime.
+LONG_EPISODE_FIT = 0.6
 
 
 class VerifyMode(StrEnum):
@@ -517,7 +519,17 @@ def _combine_one(
 
 
 def _looks_double(a: Assignment, single_episode_seconds: float | None) -> bool:
-    return len(a.episodes) >= 2 or (
+    """Whether the file probably holds two episodes (each half then gets its own excerpt).
+
+    A long file matched to one episode whose TMDB runtime accounts for its length
+    is a single long episode (an hour-long premiere), not two: telling the LLM it
+    "probably holds two consecutive episodes" invites a second, wrong answer.
+    """
+    if len(a.episodes) >= 2:
+        return True
+    if len(a.episodes) == 1 and a.signals.get("runtime_fit", 0.0) >= LONG_EPISODE_FIT:
+        return False
+    return (
         single_episode_seconds is not None
         and a.file.duration_seconds >= 1.6 * single_episode_seconds
     )

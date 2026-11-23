@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from conftest import FIXTURES, FakeRipBuilder, FakeTMDB
-from disc2plex.models import AssignmentStatus, ScanResult
+from disc2plex.models import AssignmentStatus, FileClass, ScanResult
 from disc2plex.pipeline import PlanRequest, PlanRun, run_plan
 from disc2plex.scan import ProbeFn, scan_directory
 
@@ -125,3 +125,54 @@ def test_parks_left_over_title_makes_nothing_confident(
     )
     assert all(a.status is not AssignmentStatus.CONFIDENT for a in run.match.assignments)
     assert any("left over" in n for n in run.match.notes)
+
+
+# --- Parks and Recreation, Season 6, DVD disc 1 ------------------------------------
+#
+# t01 (43:05) is the hour-long premiere "London", one 44-minute episode on TMDB.
+# t02-t08 are 21:35 each at nearly the same bitrate, so any two of them add up to
+# t01 in length and size; it was once called their Play-All and left behind.
+# t09 (20:22, stereo) is not an episode. t10 and t13 (4.4 min) each happen to
+# equal two shorter featurettes.
+
+
+def parks_s6_run(fake_rip: FakeRipBuilder, tmp_path: Path, disc: int | None = None) -> PlanRun:
+    data = json.loads((FIXTURES / "real" / "parks_s6_d1.json").read_text())
+    rip_dir, probe = fake_rip({n: (i["probe"], i["size_bytes"]) for n, i in data.items()})
+    return run_plan(
+        PlanRequest(
+            rip_dir=rip_dir, output_root=tmp_path / "lib", tmdb_id=8592, season=6, disc=disc
+        ),
+        scanner=lambda path: scan_directory(path, probe=probe),
+        client=FakeTMDB({**PARKS_ROUTES, "/3/tv/8592/season/6": "tv_8592_season_6"}).client(),
+    )
+
+
+def test_parks_s6_hour_long_premiere_is_an_episode_not_a_play_all(
+    fake_rip: FakeRipBuilder, tmp_path: Path
+) -> None:
+    run = parks_s6_run(fake_rip, tmp_path, disc=1)
+    classes = {i.file.path.stem[-3:]: i.file_class for i in run.classified.items}
+    assert FileClass.PLAY_ALL not in classes.values()
+    assert classes["t01"] is FileClass.EPISODE
+    result = by_title(run)
+    assert result["t01"] == ("s06e01", AssignmentStatus.CONFIDENT)
+    for number in range(2, 9):
+        assert result[f"t{number:02d}"] == (f"s06e{number:02d}", AssignmentStatus.CONFIDENT)
+
+
+def test_parks_s6_short_sums_of_featurettes_are_extras(
+    fake_rip: FakeRipBuilder, tmp_path: Path
+) -> None:
+    run = parks_s6_run(fake_rip, tmp_path)
+    classes = {i.file.path.stem[-3:]: i.file_class for i in run.classified.items}
+    assert classes["t10"] is FileClass.EXTRA
+    assert classes["t13"] is FileClass.EXTRA
+
+
+def test_parks_s6_without_a_hint_runtimes_alone_are_not_confident(
+    fake_rip: FakeRipBuilder, tmp_path: Path
+) -> None:
+    # t01 could be the 44-minute premiere or two 22-minute episodes.
+    run = parks_s6_run(fake_rip, tmp_path)
+    assert all(a.status is not AssignmentStatus.CONFIDENT for a in run.match.assignments)

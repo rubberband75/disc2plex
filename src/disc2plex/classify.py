@@ -9,7 +9,8 @@ Passes, in order:
 1. Junk: no duration, very short, no audio, or an exact duplicate of another title.
 2. Play-All: duration matches the sum of two or more other titles, confirmed by
    matching total size (same underlying video) or by chapter marks at the
-   component boundaries. An unconfirmed match is only "suspected".
+   component boundaries. Chapters that miss every boundary outweigh a size
+   match. An unconfirmed match is only "suspected".
 3. Reference length: the dominant cluster of similar durations, optionally
    steered by an expected runtime (from TMDB).
 4. Ratio bands: each remaining file is judged by duration / reference.
@@ -217,6 +218,26 @@ def _size_matches(
     ) and _within(candidate.duration_seconds, total, cfg.play_all_strict_duration_tolerance)
 
 
+def _confirmation(
+    candidate: MediaFile, components: Sequence[MediaFile], cfg: ClassifyConfig
+) -> str | None:
+    """What confirms ``candidate`` as a Play-All of ``components``: "size", "chapters", or None.
+
+    A Play-All has a chapter mark where each episode starts. So when the
+    candidate has chapters, every play order could be tried, and none puts a
+    mark at the boundaries, matching sizes don't count: episodes of one show
+    often share a length and a bitrate, and then any two of them "match" a
+    genuine double-length episode (Parks and Recreation S6's 43-minute "London").
+    """
+    chapters = _chapters_align(candidate, components, cfg)
+    if not _size_matches(candidate, components, cfg):
+        return "chapters" if chapters else None
+    every_order_tried = len(components) <= _MAX_PERMUTED_COMPONENTS
+    if candidate.chapter_count >= 2 and every_order_tried and not chapters:
+        return None
+    return "size"
+
+
 def _mark_play_all(verdicts: list[_Verdict], cfg: ClassifyConfig) -> None:
     live = [v for v in verdicts if v.file_class is None]
     confirmed: set[Path] = set()
@@ -244,17 +265,10 @@ def _mark_play_all(verdicts: list[_Verdict], cfg: ClassifyConfig) -> None:
         ]
         if not attempts:
             continue
-        confirmed_attempt = next(
-            (
-                (components, size_match)
-                for components in attempts
-                if (size_match := _size_matches(candidate, components, cfg))
-                or _chapters_align(candidate, components, cfg)
-            ),
-            None,
-        )
+        confirmations = [(c, _confirmation(candidate, c, cfg)) for c in attempts]
+        confirmed_attempt = next(((c, how) for c, how in confirmations if how), None)
         components = confirmed_attempt[0] if confirmed_attempt else attempts[-1]
-        size_match = confirmed_attempt[1] if confirmed_attempt else False
+        size_match = bool(confirmed_attempt and confirmed_attempt[1] == "size")
         total = sum(c.duration_seconds for c in components)
         summary = (
             f"length {format_duration(candidate.duration_seconds)} matches "
@@ -377,9 +391,11 @@ def _classify_by_ratio(
             FileClass.EPISODE,
             f"{ratio:.2f}x typical length, but matches a {tmdb_match / 60:g}-min episode on TMDB",
         )
-    elif v.suspected_play_all_of:
+    elif v.suspected_play_all_of and ratio >= cfg.extra_max_ratio:
         # Includes the classic ambiguity: a 2x title equal to two episodes
         # could be a two-episode Play-All or a genuine double-length episode.
+        # (Far shorter than an episode, it is extra material either way: two
+        # featurettes back to back are still featurettes.)
         v.decide(FileClass.UNKNOWN, f"{ratio:.2f}x episode length; Play-All or long episode?")
     elif _within(ratio, 1.0, cfg.episode_tolerance):
         v.decide(FileClass.EPISODE, f"{ratio:.2f}x typical episode length ({ref_text})")
