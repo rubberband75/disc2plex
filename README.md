@@ -74,8 +74,13 @@ episodes apart, so expect review items unless you turn on content verification.
 # Claude (needs ANTHROPIC_API_KEY); a few cents per checked file, answers cached
 disc2plex plan ./DISC --show "The Good Place" --season 1 --llm claude
 
-# A local model via Ollama, LM Studio, or llama.cpp server
+# A local model via Ollama, LM Studio, or llama.cpp server (nothing leaves the machine)
 DISC2PLEX_LLM_MODEL=llama3.1:8b disc2plex plan ./DISC --show ... --llm local
+
+# llama.cpp: start the server, then point disc2plex at it (the default URL is Ollama's)
+llama-server -m ~/models/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf -c 16384 --port 8090 -a qwen
+DISC2PLEX_LLM_BASE_URL=http://127.0.0.1:8090/v1 disc2plex plan ./DISC --show ... \
+    --llm local --llm-model qwen
 
 # Check every episode, not just the uncertain ones
 disc2plex plan ./DISC --show ... --llm claude --verify all
@@ -84,6 +89,13 @@ disc2plex plan ./DISC --show ... --llm claude --verify all
 If a file's answer contradicts its match, or is unclear, it gets a second listen:
 two more excerpts are transcribed and the LLM is asked again with all of them. This
 usually fixes a misleading first excerpt; files that still conflict go to review.
+
+Local models are asked not to "think" before answering (a small reasoning model
+can think for minutes here without reaching an answer); set `thinking = true`
+under `[local_llm]` to allow it. Give the server at least an 8k context: a season's
+synopses plus the excerpts run to 3-6k tokens. A larger model is worth it: on one
+real disc a 35B model matched Claude's answers on the first listen, while a 9B
+model got two of seven episodes wrong at "95%" until the second listen fixed them.
 
 Transcripts are only sent to an API when you choose `--llm claude`. Whisper runs
 locally; the first run downloads the model (~480 MB for `small`). To see what

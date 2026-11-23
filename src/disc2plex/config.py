@@ -116,6 +116,9 @@ class ClaudeSettings(_Section):
 class LocalLLMSettings(_Section):
     base_url: str | None = None
     model: str | None = None
+    # Let a reasoning model think before answering. Off by default: small models
+    # can think for minutes on this task without reaching an answer.
+    thinking: bool = False
 
 
 class PlexSettings(_Section):
@@ -206,6 +209,7 @@ CONFIG_TEMPLATE = """\
 # DISC2PLEX_LLM_BASE_URL / DISC2PLEX_LLM_MODEL in the environment override these.
 # base_url = "http://localhost:11434/v1"
 # model = "llama3.1:8b"
+# thinking = false           # true lets a reasoning model think first (much slower)
 
 [plex]
 # Optional: ask Plex to scan the show folder after apply. Token: PLEX_TOKEN.

@@ -381,6 +381,7 @@ def _make_llm(llm: LLMChoice, model: str | None, settings: Settings) -> LLMBacke
         model or os.environ.get("DISC2PLEX_LLM_MODEL") or local.model or "",
         base_url=os.environ.get("DISC2PLEX_LLM_BASE_URL") or local.base_url or DEFAULT_BASE_URL,
         api_key=os.environ.get("DISC2PLEX_LLM_API_KEY"),
+        thinking=local.thinking,
     )
 
 

@@ -13,7 +13,7 @@ import pytest
 
 from disc2plex.llm.base import CachedLLM, LLMError, LLMResponse
 from disc2plex.llm.claude import FALLBACK_BETA, ClaudeBackend
-from disc2plex.llm.openai_compat import OpenAICompatBackend
+from disc2plex.llm.openai_compat import ANSWER_MAX_TOKENS, OpenAICompatBackend
 
 SCHEMA = {"type": "object", "properties": {"x": {"type": "integer"}}, "required": ["x"]}
 
@@ -166,7 +166,43 @@ def test_openai_compat_request_and_response() -> None:
     assert body["temperature"] == 0
     assert body["messages"][0] == {"role": "system", "content": "sys"}
     assert body["response_format"]["json_schema"]["schema"] == SCHEMA
+    # By default the model is asked not to think, and a runaway reply is capped.
+    assert body["chat_template_kwargs"] == {"enable_thinking": False}
+    assert body["max_tokens"] == ANSWER_MAX_TOKENS
     assert (result.text, result.input_tokens, result.output_tokens) == ('{"x": 2}', 900, 30)
+
+
+def test_openai_compat_thinking_leaves_the_server_in_charge() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}]})
+
+    backend = OpenAICompatBackend("qwen", thinking=True, transport=httpx.MockTransport(handler))
+    backend.complete_json("s", "u", SCHEMA)
+    body = json.loads(seen[0].content)
+    assert "chat_template_kwargs" not in body
+    assert "max_tokens" not in body
+    # A different name keeps thinking and non-thinking answers apart in the cache.
+    assert backend.name == "local/qwen/thinking"
+    assert openai_backend(handler, "qwen").name == "local/qwen"
+
+
+def test_openai_compat_truncated_reply_is_an_error() -> None:
+    cut_off = httpx.Response(
+        200, json={"choices": [{"finish_reason": "length", "message": {"content": '{"x"'}}]}
+    )
+    with pytest.raises(LLMError, match="ran out of tokens"):
+        openai_backend(lambda _r: cut_off).complete_json("s", "u", SCHEMA)
+
+
+def test_openai_compat_timeout_is_not_reported_as_unreachable() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("timed out", request=request)
+
+    with pytest.raises(LLMError, match="did not answer within 300 s"):
+        openai_backend(handler).complete_json("s", "u", SCHEMA)
 
 
 @pytest.mark.parametrize(
