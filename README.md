@@ -29,9 +29,16 @@ uv run disc2plex config init # optional: writes ~/.config/disc2plex/config.toml
 uv run disc2plex --help
 ```
 
-Secrets live in the environment or `.env` (`./.env` or `~/.config/disc2plex/.env`):
-`TMDB_API_TOKEN`, `ANTHROPIC_API_KEY`, `PLEX_TOKEN`, `HF_TOKEN` (optional, for
-Whisper model downloads), and `DISC2PLEX_LLM_*` for a local LLM.
+Secrets live in the environment or `.env`: `TMDB_API_TOKEN`, `ANTHROPIC_API_KEY`,
+`PLEX_TOKEN`, `HF_TOKEN` (optional, for Whisper model downloads), and
+`DISC2PLEX_LLM_*` for a local LLM. `.env` is read from the folder you run the
+command in, then from `~/.config/disc2plex/.env`; put it in the second place to
+run from anywhere.
+
+The examples below write `disc2plex` for short. Run it as `uv run disc2plex ...`
+from the repository, or activate the environment first
+(`source .venv/bin/activate`). After moving or renaming the repository folder,
+run `uv sync --reinstall` once: the environment's launchers store its old path.
 
 ## A typical disc
 
@@ -142,9 +149,13 @@ root = "/srv/plex/TV Shows"   # so you can drop --output
 review = "move"               # or "leave"
 
 [matching]
-llm = "claude"                # verify uncertain matches by default
+llm = "claude"                # verify uncertain matches by default ("local" for your own server)
 confident = 0.85              # thresholds for library / review / unmatched
 review = 0.5
+
+[local_llm]                   # used with llm = "local"
+base_url = "http://127.0.0.1:8090/v1"
+model = "qwen"
 
 [plex]
 url = "http://localhost:32400"

@@ -82,7 +82,7 @@ Verify Plex conventions against current Plex docs if unsure; they change occasio
 
 ---
 
-## 5. Proposed Project Structure
+## 5. Project Structure
 
 ```
 disc2plex/
@@ -99,6 +99,7 @@ disc2plex/
 │   ├── scan.py               # ffprobe wrapper -> MediaFile objects
 │   ├── classify.py           # Junk/extras/play-all detection, duration clustering
 │   ├── tmdb.py               # TMDB client + on-disk cache
+│   ├── pipeline.py           # Glue: scan -> classify -> TMDB -> match -> plan (used by plan and apply)
 │   ├── match/
 │   │   ├── __init__.py
 │   │   ├── heuristic.py      # Order + runtime matching (step 1 of matching)
@@ -112,14 +113,16 @@ disc2plex/
 │   ├── plan.py               # Build the rename/move plan (pure, no side effects)
 │   ├── apply.py              # Execute plan, write manifest, support undo
 │   ├── naming.py             # Plex filename/folder generation + sanitization
+│   ├── plex.py               # Optional: ask Plex to scan show folders after apply
 │   └── report.py             # Human-readable + JSON report output
-├── tests/
-│   ├── fixtures/             # Tiny fake ffprobe JSON, TMDB JSON samples (no real video)
-│   └── test_*.py
-└── manifests/                # Runtime output (gitignored): one JSON per apply run
+└── tests/
+    ├── fixtures/             # ffprobe JSON and TMDB JSON samples, some trimmed from real discs (no video)
+    └── test_*.py
 ```
 
-Keep side effects (file moves, network, subprocess) isolated in `scan.py`, `tmdb.py`, `transcribe.py`, `llm/`, and `apply.py`. Everything else should be pure and unit-testable.
+Runtime files live outside the repo, in per-user XDG directories: caches in `~/.cache/disc2plex/` (`probe.json`, `tmdb/`, `transcripts/`, `llm/`), the config in `~/.config/disc2plex/config.toml`, and one undo manifest per apply run in `~/.local/share/disc2plex/manifests/`. `inputs/` and `outputs/` in the repo are gitignored scratch folders for real rips.
+
+Keep side effects (file moves, network, subprocess) isolated in `scan.py`, `tmdb.py`, `transcribe.py`, `llm/`, `plex.py`, and `apply.py`. Everything else should be pure and unit-testable.
 
 ---
 
@@ -157,7 +160,7 @@ Implement in stages, each producing inspectable output. Every stage should be ru
 ### Stage 3: Fetch TMDB data
 - Resolve the show: use `--tmdb-id` if provided, else search by name (+ `--year`), and if ambiguous show the top candidates and require the user to choose (interactive prompt, or fail with a clear message in non-interactive mode).
 - Fetch show details and season episode lists. Fetch **episode groups** (`/tv/{id}/episode_groups`) so DVD order can be used when it differs from aired order. Expose `--order aired|dvd|<group-id>`.
-- Cache all TMDB responses on disk (`.cache/tmdb/`) with a TTL (e.g., 7 days).
+- Cache all TMDB responses on disk (`~/.cache/disc2plex/tmdb/`) with a 7-day TTL.
 
 ### Stage 4: Heuristic matching
 - Inputs: classified episode files, the season's episode list, optional `--disc-episodes 1-4` hint.
@@ -190,7 +193,7 @@ Only run for files that are low-confidence, ambiguous, or when `--verify all` is
 - Only runs with `--apply`. Re-validate that sources still exist and destinations don't.
 - **Never overwrite** an existing file. On collision, skip and report.
 - Default action is `move` within the same filesystem. Offer `--hardlink` and `--copy`.
-- Write a `manifest` JSON to `manifests/` before and during the run so `disc2plex undo <manifest>` can reverse it.
+- Write a `manifest` JSON to `~/.local/share/disc2plex/manifests/` before and during the run so `disc2plex undo <manifest>` can reverse it.
 - Low-confidence and unmatched files go to `<output>/_review/<disc-name>/` unchanged (or are left in place; make this a flag).
 
 ---
@@ -276,6 +279,7 @@ Uses `uv`. Dev tools live in the `dev` dependency group, which `uv sync` install
 # setup
 uv sync                  # creates .venv, installs runtime + dev deps
 cp .env.example .env     # then fill in keys
+uv sync --reinstall      # once, after moving or renaming the repo folder (launchers store the old path)
 
 # dev loop
 uv run pytest -q
@@ -443,4 +447,7 @@ When starting, ask the user about these and record answers in this file:
   - A "suspected Play-All" shorter than half an episode is an extra, not UNKNOWN (two 4.4-minute titles here each equal two 2-minute featurettes and were going to `_review` instead of `_extras_review`).
   - Runtime-only matching on this disc is correctly not confident without a hint (t01 fits one 44-minute episode or two 22-minute ones); `--disc 1` makes t01-t08 confident.
   - Fixtures: `tests/fixtures/real/parks_s6_d1.json`, `tests/fixtures/tmdb/tv_8592_season_6.json`, and a replay test of the 35B model's real answers.
+- 2026-11-23: The user ran the first fully local apply themselves, from cleared caches: Parks and Recreation S6D1 with the local 35B model, 19 moves, none skipped or failed (8 episodes to `Season 06`, t09 to `_review`, 10 titles to `_extras_review`).
+  - This machine's `~/.config/disc2plex/config.toml` now sets `library.root` to the repo's `outputs/`, `matching.llm = "local"`, and the llama.cpp server URL and model under `[local_llm]`, so `--output`, `--llm`, and `--llm-model` can be dropped.
+  - Docs tidy: sections 5, 7, and 11 now describe the real layout (`pipeline.py`, `plex.py`, XDG locations for caches and manifests); the README says how to invoke `disc2plex`, where `.env` is read from, and to run `uv sync --reinstall` after renaming the folder.
 
