@@ -93,6 +93,7 @@ def test_parse_settings_values() -> None:
         ("[library]\nroot = ", "invalid TOML"),
         ("[library]\nroots = '/x'", "library.roots"),
         ("[matching]\nllm = 'gpt'", "matching.llm"),
+        ("[matching]\nwhisper_device = 'opencl'", "matching.whisper_device"),
         ("[matching]\nconfident = 0.5\nreview = 0.6", "lower than matching.confident"),
         ("[nonsense]\n", "nonsense"),
     ],

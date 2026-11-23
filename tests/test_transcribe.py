@@ -12,9 +12,11 @@ import shutil
 import subprocess
 import wave
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from disc2plex import transcribe as transcribe_module
 from disc2plex.models import AudioTrack, MediaFile, SliceTranscript
 from disc2plex.transcribe import (
     FasterWhisperTranscriber,
@@ -173,6 +175,142 @@ def test_unknown_model_rejected() -> None:
         FasterWhisperTranscriber("gigantic")
 
 
+# --- device choice and GPU fallback (CTranslate2 faked) ---------------------------
+
+
+class FakeSegment:
+    text = " heard on the device "
+
+
+class FakeInfo:
+    duration = 0.1
+    language = "en"
+    language_probability = 0.99
+
+
+class FakeModel:
+    """Stands in for faster_whisper.WhisperModel; can fail like a full GPU does."""
+
+    def __init__(self, device: str, fail: bool = False) -> None:
+        self.device, self.fail = device, fail
+        self.options: dict[str, object] = {}
+
+    def transcribe(self, samples: object, **options: object) -> tuple[Any, FakeInfo]:
+        self.options = options
+        if self.fail:
+            raise RuntimeError("CUDA failed with error out of memory")
+        return iter([FakeSegment()]), FakeInfo()
+
+
+@pytest.fixture
+def silence(tmp_path: Path) -> Path:
+    wav = tmp_path / "silence.wav"
+    with wave.open(str(wav), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(16000)
+        handle.writeframes(b"\x00\x00" * 1600)
+    return wav
+
+
+def fake_whisper(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    cuda: tuple[str, ...] = (),
+    gpu_load_fails: bool = False,
+    gpu_run_fails: bool = False,
+) -> list[tuple[str, str]]:
+    """Fake the GPU probe and model loading; returns the (device, compute type) loads."""
+    loads: list[tuple[str, str]] = []
+
+    def load(self: object, device: str, compute_type: str) -> FakeModel:
+        loads.append((device, compute_type))
+        if device == "cuda" and gpu_load_fails:
+            raise RuntimeError("CUDA failed with error out of memory")
+        return FakeModel(device, fail=device == "cuda" and gpu_run_fails)
+
+    monkeypatch.setattr(transcribe_module, "cuda_compute_types", lambda: frozenset(cuda))
+    monkeypatch.setattr(FasterWhisperTranscriber, "_load", load)
+    return loads
+
+
+PASCAL = ("float32", "int8", "int8_float32")  # what a GTX 1080 Ti offers
+
+
+def test_auto_uses_the_cpu_without_a_gpu(monkeypatch: pytest.MonkeyPatch, silence: Path) -> None:
+    loads = fake_whisper(monkeypatch)
+    whisper = FasterWhisperTranscriber("small")
+    assert whisper.device is None  # nothing is loaded until the first slice
+    assert whisper.transcribe(silence, "en").text == "heard on the device"
+    assert (loads, whisper.device) == ([("cpu", "int8")], "cpu")
+
+
+@pytest.mark.parametrize(
+    ("supported", "chosen"),
+    [(PASCAL, "int8_float32"), ((*PASCAL, "float16", "int8_float16"), "float16")],
+)
+def test_auto_uses_the_gpu_with_its_best_compute_type(
+    monkeypatch: pytest.MonkeyPatch, silence: Path, supported: tuple[str, ...], chosen: str
+) -> None:
+    loads = fake_whisper(monkeypatch, cuda=supported)
+    whisper = FasterWhisperTranscriber("small")
+    whisper.transcribe(silence, "en")
+    whisper.transcribe(silence, "en")
+    assert (loads, whisper.device) == ([("cuda", chosen)], "cuda")  # loaded once
+
+
+@pytest.mark.parametrize("failure", ["gpu_load_fails", "gpu_run_fails"])
+def test_auto_falls_back_to_the_cpu_when_the_gpu_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    silence: Path,
+    caplog: pytest.LogCaptureFixture,
+    failure: str,
+) -> None:
+    # The usual cause: a local LLM already fills the card's memory.
+    loads = fake_whisper(monkeypatch, cuda=PASCAL, **{failure: True})
+    whisper = FasterWhisperTranscriber("small")
+    assert whisper.transcribe(silence, "en").text == "heard on the device"
+    assert whisper.transcribe(silence, "en").text == "heard on the device"
+    # One attempt on the GPU, then the CPU for the rest of the run.
+    assert (loads, whisper.device) == ([("cuda", "int8_float32"), ("cpu", "int8")], "cpu")
+    assert "could not use the GPU" in caplog.text
+    assert "out of memory" in caplog.text
+
+
+def test_cuda_device_makes_gpu_failures_errors(
+    monkeypatch: pytest.MonkeyPatch, silence: Path
+) -> None:
+    fake_whisper(monkeypatch, cuda=PASCAL, gpu_run_fails=True)
+    with pytest.raises(TranscriptionError, match=r"could not run on the GPU.*out of memory"):
+        FasterWhisperTranscriber("small", device="cuda").transcribe(silence, "en")
+    fake_whisper(monkeypatch)  # no GPU at all
+    with pytest.raises(TranscriptionError, match="no NVIDIA GPU"):
+        FasterWhisperTranscriber("small", device="cuda").transcribe(silence, "en")
+
+
+def test_gpu_retries_sample_fewer_candidates_to_save_memory(
+    monkeypatch: pytest.MonkeyPatch, silence: Path
+) -> None:
+    fake_whisper(monkeypatch, cuda=PASCAL)
+    on_gpu = FasterWhisperTranscriber("small")
+    on_gpu.transcribe(silence, "en")
+    on_cpu = FasterWhisperTranscriber("small", device="cpu")
+    on_cpu.transcribe(silence, "en")
+    assert on_gpu._model.options["best_of"] == 2
+    assert on_cpu._model.options["best_of"] == 5
+
+
+def test_cpu_device_never_looks_for_a_gpu(monkeypatch: pytest.MonkeyPatch, silence: Path) -> None:
+    loads = fake_whisper(monkeypatch, cuda=PASCAL)
+    FasterWhisperTranscriber("small", device="cpu").transcribe(silence, "en")
+    assert loads == [("cpu", "int8")]
+
+
+def test_unknown_device_rejected() -> None:
+    with pytest.raises(TranscriptionError, match="unknown Whisper device"):
+        FasterWhisperTranscriber("small", device="opencl")
+
+
 # --- transcribe_file with a fake transcriber ----------------------------------
 
 
@@ -258,6 +396,7 @@ def test_real_whisper_on_synthesized_speech(tmp_path: Path) -> None:
     """Manual eval: flite speaks a sentence, real faster-whisper must hear it.
 
     Run with: DISC2PLEX_REAL_WHISPER=1 uv run pytest -q tests/test_transcribe.py -k real
+    Add DISC2PLEX_WHISPER_DEVICE=cuda (or cpu) to insist on a device, and -s to see which ran.
     """
     clip = tmp_path / "speech.mkv"
     make_clip(clip, speech="Welcome to the good place. Everything is fine.")
@@ -272,10 +411,15 @@ def test_real_whisper_on_synthesized_speech(tmp_path: Path) -> None:
         audio_tracks=(track(1, channels=1),),
     )
     model = os.environ.get("DISC2PLEX_WHISPER_MODEL", "small")
-    result = transcribe_file(media, FasterWhisperTranscriber(model))
+    device = os.environ.get("DISC2PLEX_WHISPER_DEVICE", "auto")
+    whisper = FasterWhisperTranscriber(model, device=device)
+    result = transcribe_file(media, whisper)
     text = result.text.lower()
     assert "good place" in text
     assert "fine" in text
+    print(f"real Whisper ran on {whisper.device}")  # shown with pytest -s
+    if device != "auto":
+        assert whisper.device == device
 
 
 # --- CLI ----------------------------------------------------------------------
@@ -287,8 +431,35 @@ def cli_clip(clip_media: MediaFile, monkeypatch: pytest.MonkeyPatch, tmp_path: P
 
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "xdg"))
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(cli, "FasterWhisperTranscriber", lambda _model: FakeTranscriber())
+    monkeypatch.setattr(
+        cli, "FasterWhisperTranscriber", lambda _model, **_options: FakeTranscriber()
+    )
     return clip_media.path.parent
+
+
+def test_cli_passes_the_whisper_device(
+    cli_clip: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from typer.testing import CliRunner
+
+    from disc2plex import cli
+
+    seen: list[str] = []
+
+    def make(_model: str, *, device: str) -> FakeTranscriber:
+        seen.append(device)
+        return FakeTranscriber()
+
+    monkeypatch.setattr(cli, "FasterWhisperTranscriber", make)
+    runner = CliRunner()
+    assert runner.invoke(cli.app, ["transcribe", str(cli_clip)]).exit_code == 0
+    args = ["transcribe", str(cli_clip), "--whisper-device", "cpu", "--no-cache"]
+    assert runner.invoke(cli.app, args).exit_code == 0
+    config = tmp_path / "config.toml"
+    config.write_text('[matching]\nwhisper_device = "cuda"\n')
+    monkeypatch.setenv("DISC2PLEX_CONFIG", str(config))
+    assert runner.invoke(cli.app, ["transcribe", str(cli_clip), "--no-cache"]).exit_code == 0
+    assert seen == ["auto", "cpu", "cuda"]  # default, flag, config file
 
 
 def test_cli_transcribe_named_file(cli_clip: Path) -> None:

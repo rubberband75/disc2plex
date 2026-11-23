@@ -19,6 +19,9 @@ or deletes a file, never modifies video, and every run can be undone.
 - A free [TMDB](https://www.themoviedb.org/settings/api) API Read Access Token
 - Optional: an Anthropic API key (`--llm claude`) or a local OpenAI-compatible
   server such as Ollama (`--llm local`) for content verification
+- Optional: an NVIDIA GPU for faster transcription. It needs the CUDA 12 cuBLAS
+  library (`libcublas.so.12`; on Ubuntu/Mint the `libcublas12` package, part of
+  `nvidia-cuda-toolkit`) and about 0.8 GB of free GPU memory
 
 ## Setup
 
@@ -108,6 +111,13 @@ Transcripts are only sent to an API when you choose `--llm claude`. Whisper runs
 locally; the first run downloads the model (~480 MB for `small`). To see what
 Whisper hears: `disc2plex transcribe ./DISC -f DISC_t03.mkv`.
 
+Whisper runs on an NVIDIA GPU when it can and on the CPU otherwise
+(`--whisper-device auto|cpu|cuda`, or `whisper_device` under `[matching]`). With
+`auto`, a GPU that can't be used (no CUDA library, memory full) costs one warning
+and the run continues on the CPU; `cuda` makes that an error. On a GTX 1080 Ti the
+`small` model transcribes at about 32x real time against 9x on an 8-core CPU, and
+fits beside a local LLM on the same card. `-v` shows which device was used.
+
 ## Reviewing uncertain files
 
 Files that need review go to `<output>/_review/<disc>/` (or stay in the rip folder
@@ -180,6 +190,7 @@ example a share), set `plex.library_path`, or set `plex.section` directly
 ```bash
 uv run pytest -q
 DISC2PLEX_REAL_WHISPER=1 uv run pytest -q tests/test_transcribe.py -k real   # real Whisper
+DISC2PLEX_REAL_WHISPER=1 DISC2PLEX_WHISPER_DEVICE=cuda uv run pytest -q -s tests/test_transcribe.py -k real   # on the GPU
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
 ```

@@ -98,6 +98,8 @@ class MatchingSettings(_Section):
     verify: Literal["none", "low", "all"] = "low"
     llm: Literal["claude", "local", "none"] = "none"
     whisper_model: str = "small"
+    # auto: an NVIDIA GPU if one can be used, else the CPU (also on GPU failure).
+    whisper_device: Literal["auto", "cpu", "cuda"] = "auto"
     lang: str = "en"
     confident: float = Field(default=0.85, gt=0, le=1)
     review: float = Field(default=0.5, ge=0, lt=1)
@@ -196,6 +198,7 @@ CONFIG_TEMPLATE = """\
 # verify = "low"             # none | low | all
 # llm = "none"               # none | claude | local (claude sends transcripts to the API)
 # whisper_model = "small"    # tiny | base | small | medium | large-v3 ...
+# whisper_device = "auto"    # auto | cpu | cuda (auto: NVIDIA GPU if usable, else CPU)
 # lang = "en"
 # confident = 0.85           # at or above: placed in the library
 # review = 0.5               # between review and confident: needs review; below: unmatched

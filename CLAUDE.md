@@ -221,7 +221,7 @@ Common options:
 - `--season INT` (required unless inferable), `--disc INT`, `--disc-episodes 1-4`
 - `--order aired|dvd|<episode-group-id>`
 - `--output PATH` (Plex library root; also settable via config)
-- `--verify none|low|all` (default `low`), `--llm claude|local|none`, `--whisper-model small`
+- `--verify none|low|all` (default `low`), `--llm claude|local|none`, `--whisper-model small`, `--whisper-device auto|cpu|cuda`
 - `--lang en` (audio language preference)
 - `--action move|hardlink|copy`, `--include-titles/--no-titles`, `--extras review|season0|skip`
 - `--apply` (only on `apply`; `plan` is always dry-run), `--yes` (skip prompts), `--json` (machine-readable output), `-v/-vv`
@@ -284,6 +284,7 @@ uv sync --reinstall      # once, after moving or renaming the repo folder (launc
 # dev loop
 uv run pytest -q
 DISC2PLEX_REAL_WHISPER=1 uv run pytest -q tests/test_transcribe.py -k real   # opt-in real Whisper eval
+DISC2PLEX_REAL_WHISPER=1 DISC2PLEX_WHISPER_DEVICE=cuda uv run pytest -q -s tests/test_transcribe.py -k real   # same, GPU required
 uv run ruff check . && uv run ruff format .
 uv run mypy              # strict mode, configured for src/ in pyproject.toml
 
@@ -450,4 +451,11 @@ When starting, ask the user about these and record answers in this file:
 - 2026-11-23: The user ran the first fully local apply themselves, from cleared caches: Parks and Recreation S6D1 with the local 35B model, 19 moves, none skipped or failed (8 episodes to `Season 06`, t09 to `_review`, 10 titles to `_extras_review`).
   - This machine's `~/.config/disc2plex/config.toml` now sets `library.root` to the repo's `outputs/`, `matching.llm = "local"`, and the llama.cpp server URL and model under `[local_llm]`, so `--output`, `--llm`, and `--llm-model` can be dropped.
   - Docs tidy: sections 5, 7, and 11 now describe the real layout (`pipeline.py`, `plex.py`, XDG locations for caches and manifests); the README says how to invoke `disc2plex`, where `.env` is read from, and to run `uv sync --reinstall` after renaming the folder.
-
+- 2026-11-23: Whisper on the GPU (branch `whisper-gpu`; user asked). Tested live on the GTX 1080 Ti with the user's 35B llama-server loaded on the same card the whole time (about 1.2 GB of its 11 GB free).
+  - `FasterWhisperTranscriber(device="auto"|"cpu"|"cuda")`, `[matching] whisper_device`, `--whisper-device` on `plan`/`apply`/`transcribe`; default `auto`. `auto` uses CUDA when CTranslate2 reports a device, else the CPU. A GPU failure (CTranslate2 raises `RuntimeError` at load or mid-slice) logs one warning and the rest of the run uses the CPU; with `cuda` it is a `TranscriptionError` instead. The fallback is for the whole run because a model that hit out-of-memory is unusable afterwards ("cudaErrorInvalidDevice" on the next call).
+  - No cuDNN is needed, correcting the 2026-11-23 hardware entry above: CTranslate2 4.8.2 ran on CUDA with only the system `libcublas.so.12` (apt `libcublas12`). No new packages were installed. `ctranslate2` is now declared in `pyproject.toml` because `transcribe.py` imports it (it was already installed through faster-whisper).
+  - GPU compute type: `float16` if supported, else `int8_float32`, `int8`, `float32` (a 1080 Ti has no `float16`). The CPU stays `int8`.
+  - Memory: `small` needs about 0.7 GB of GPU memory, except that Whisper's temperature fallback (retrying a badly decoded passage by sampling `best_of=5` candidates) needed over 500 MB more and ran out of memory beside the LLM. On the GPU `best_of` is 2; the CPU keeps 5. With that, all of a 43-minute file transcribed on the GPU (ten 240 s slices, peak +746 MiB).
+  - Speed on this machine: 32x real time on the GPU against 9x on the CPU (240 s slice: about 7 s against 26-40 s). Full `plan` of one file from empty caches, including one local LLM call: 22 s against 34 s.
+  - The transcript cache key has no device in it, so transcripts are shared between CPU and GPU runs (use `transcribe --no-cache` to compare).
+  - Not tested: a GPU with nothing else on it (the user's server was running and I could not stop it), `best_of=5` memory on a roomier card, and a machine with an NVIDIA GPU but no cuBLAS library (expected to fall back with the same warning; the out-of-memory fallback is the one that was exercised for real).

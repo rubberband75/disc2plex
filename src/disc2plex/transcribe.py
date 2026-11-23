@@ -5,8 +5,11 @@ video is only ever read. Transcripts are cached on disk because transcription
 is by far the slowest step of the pipeline.
 
 Hardware note: faster-whisper runs on CTranslate2, which accelerates only on
-NVIDIA CUDA. On other machines (including AMD GPUs) it runs on the CPU, where
-int8 quantisation keeps the ``small`` model fast enough for a few minutes of audio.
+NVIDIA CUDA. With device ``auto`` (the default) an NVIDIA card is used when
+there is one, and anything that goes wrong there (most often the card's memory
+being full of a local LLM) falls back to the CPU, where int8 quantisation keeps
+the ``small`` model fast enough for a few minutes of audio. Other GPUs (AMD,
+Intel) always mean CPU.
 """
 
 from __future__ import annotations
@@ -31,6 +34,17 @@ from disc2plex.models import AudioTrack, FileTranscript, MediaFile, SliceTranscr
 log = logging.getLogger(__name__)
 
 WHISPER_MODELS = ("tiny", "base", "small", "medium", "large-v3")
+WHISPER_DEVICES = ("auto", "cpu", "cuda")
+# GPU compute types, best first: half precision where the card supports it
+# (not on GTX 10-series), then 8-bit weights, which need the least memory.
+_CUDA_COMPUTE_TYPES = ("float16", "int8_float32", "int8", "float32")
+# When a passage decodes badly, Whisper retries it by sampling this many
+# candidates and keeping the best. On the GPU, sampling the default 5 at once
+# takes over 500 MB more memory than anything else in a run (measured with
+# `small`: about 0.7 GB otherwise), which is exactly what runs out when a local
+# LLM shares the card. Two keep the retry and fit.
+_CPU_BEST_OF = 5
+_CUDA_BEST_OF = 2
 FFMPEG_TIMEOUT_SECONDS = 120
 _CACHE_VERSION = 1
 
@@ -205,8 +219,26 @@ class Transcriber(Protocol):
     def transcribe(self, wav: Path, language: str | None) -> SliceTranscript: ...
 
 
+def cuda_compute_types() -> frozenset[str]:
+    """Compute types CTranslate2 supports on this machine's CUDA device (empty: no usable GPU)."""
+    try:
+        import ctranslate2  # heavy import, deferred
+
+        if ctranslate2.get_cuda_device_count() < 1:
+            return frozenset()
+        return frozenset(ctranslate2.get_supported_compute_types("cuda"))
+    except Exception as exc:  # a broken driver must not break CPU transcription
+        log.debug("no usable CUDA device: %s", exc)
+        return frozenset()
+
+
 class FasterWhisperTranscriber:
-    """faster-whisper on CPU (int8) by default; the model loads on first use.
+    """faster-whisper on an NVIDIA GPU when possible, else on the CPU (int8).
+
+    ``device``: ``"auto"`` tries the GPU and falls back to the CPU for the rest
+    of the run if the GPU fails (no CUDA libraries, not enough free memory);
+    ``"cuda"`` makes such a failure an error; ``"cpu"`` never touches the GPU.
+    The model loads on first use.
 
     Model weights download from Hugging Face on first use into its standard
     cache (``~/.cache/huggingface``); ``HF_TOKEN`` from the environment/.env is
@@ -217,46 +249,70 @@ class FasterWhisperTranscriber:
         self,
         model_size: str = "small",
         *,
-        device: str = "cpu",
-        compute_type: str = "int8",
+        device: str = "auto",
+        compute_type: str | None = None,
         cpu_threads: int = 0,
     ) -> None:
         if model_size not in WHISPER_MODELS:
             raise TranscriptionError(
                 f"unknown Whisper model {model_size!r}; choose from {', '.join(WHISPER_MODELS)}"
             )
+        if device not in WHISPER_DEVICES:
+            raise TranscriptionError(
+                f"unknown Whisper device {device!r}; choose from {', '.join(WHISPER_DEVICES)}"
+            )
         self._model_size = model_size
-        self._device = device
+        self._requested_device = device
         self._compute_type = compute_type
         self._cpu_threads = cpu_threads
         self._model: Any = None
+        self._device: str | None = None  # decided when the model first loads
 
     @property
     def model_name(self) -> str:
+        # No device here on purpose: a transcript is the same evidence whichever
+        # processor produced it, so cached transcripts are shared between devices.
         return f"faster-whisper/{self._model_size}"
 
-    def _load(self) -> Any:
-        if self._model is None:
-            from faster_whisper import WhisperModel  # heavy import, deferred
+    @property
+    def device(self) -> str | None:
+        """The device in use ("cpu"/"cuda"), or None before the first transcription."""
+        return self._device
 
-            log.info("loading Whisper model %s on %s", self._model_size, self._device)
-            self._model = WhisperModel(
-                self._model_size,
-                device=self._device,
-                compute_type=self._compute_type,
-                cpu_threads=self._cpu_threads,
-            )
-        return self._model
+    def _choose_device(self) -> tuple[str, str]:
+        """(device, compute type) for the first load."""
+        if self._requested_device != "cpu":
+            supported = cuda_compute_types()
+            if supported:
+                best = next((t for t in _CUDA_COMPUTE_TYPES if t in supported), "default")
+                return "cuda", self._compute_type or best
+            if self._requested_device == "cuda":
+                raise TranscriptionError(
+                    "Whisper device is cuda, but no NVIDIA GPU that CTranslate2 can use was found"
+                )
+        return "cpu", self._compute_type or "int8"
 
-    def transcribe(self, wav: Path, language: str | None) -> SliceTranscript:
-        model = self._load()
-        segments, info = model.transcribe(
+    def _load(self, device: str, compute_type: str) -> Any:
+        from faster_whisper import WhisperModel  # heavy import, deferred
+
+        log.info("loading Whisper model %s on %s (%s)", self._model_size, device, compute_type)
+        return WhisperModel(
+            self._model_size,
+            device=device,
+            compute_type=compute_type,
+            cpu_threads=self._cpu_threads,
+        )
+
+    def _run(self, wav: Path, language: str | None) -> SliceTranscript:
+        segments, info = self._model.transcribe(
             read_wav_samples(wav),
             language=language,
             beam_size=5,
+            best_of=_CUDA_BEST_OF if self._device == "cuda" else _CPU_BEST_OF,
             vad_filter=True,  # skip music/silence, which also curbs hallucinated text
             condition_on_previous_text=False,
         )
+        # Segments are produced lazily, so GPU errors can surface here too.
         text = " ".join(segment.text.strip() for segment in segments).strip()
         return SliceTranscript(
             start_seconds=0.0,
@@ -265,6 +321,36 @@ class FasterWhisperTranscriber:
             language=info.language,
             language_probability=float(info.language_probability),
         )
+
+    def _fall_back_to_cpu(self, exc: RuntimeError) -> None:
+        """After a GPU failure: an error if the GPU was demanded, else reload on the CPU."""
+        if self._requested_device == "cuda":
+            raise TranscriptionError(f"Whisper could not run on the GPU: {exc}") from exc
+        log.warning(
+            "Whisper could not use the GPU (%s); using the CPU for the rest of this run", exc
+        )
+        self._model = None  # drops the GPU model, which frees its memory
+        self._device = "cpu"
+        self._model = self._load("cpu", "int8")
+
+    def transcribe(self, wav: Path, language: str | None) -> SliceTranscript:
+        # CTranslate2 reports GPU trouble (out of memory, missing CUDA libraries)
+        # as RuntimeError, either while loading or part-way through a slice.
+        if self._model is None:
+            self._device, compute_type = self._choose_device()
+            try:
+                self._model = self._load(self._device, compute_type)
+            except RuntimeError as exc:
+                if self._device != "cuda":
+                    raise
+                self._fall_back_to_cpu(exc)
+        try:
+            return self._run(wav, language)
+        except RuntimeError as exc:
+            if self._device != "cuda":
+                raise
+            self._fall_back_to_cpu(exc)
+            return self._run(wav, language)
 
 
 # --- cache --------------------------------------------------------------------

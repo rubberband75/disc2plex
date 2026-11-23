@@ -107,6 +107,12 @@ class LLMChoice(StrEnum):
     NONE = "none"
 
 
+class WhisperDevice(StrEnum):
+    AUTO = "auto"
+    CPU = "cpu"
+    CUDA = "cuda"
+
+
 class FileAction(StrEnum):
     MOVE = "move"
     HARDLINK = "hardlink"
@@ -168,6 +174,14 @@ LLMModelOpt = Annotated[
 WhisperOpt = Annotated[
     str | None,
     typer.Option("--whisper-model", help="faster-whisper model size. \\[default: small]"),
+]
+WhisperDeviceOpt = Annotated[
+    WhisperDevice | None,
+    typer.Option(
+        "--whisper-device",
+        help="Where Whisper runs; auto uses an NVIDIA GPU when it can, else the CPU. "
+        "\\[default: auto]",
+    ),
 ]
 LangOpt = Annotated[
     str | None, typer.Option("--lang", help="Preferred audio language. \\[default: en]")
@@ -391,6 +405,7 @@ def _build_verifier(
     llm_flag: LLMChoice | None,
     llm_model: str | None,
     whisper_flag: str | None,
+    device_flag: WhisperDevice | None,
     lang_flag: str | None,
     *,
     quiet: bool,
@@ -398,6 +413,7 @@ def _build_verifier(
     """Assemble transcription + LLM for content verification, or None if not requested."""
     llm = _pick(llm_flag, LLMChoice(settings.matching.llm))
     whisper_model = _pick(whisper_flag, settings.matching.whisper_model)
+    device = _pick(device_flag, WhisperDevice(settings.matching.whisper_device))
     lang = _pick(lang_flag, settings.matching.lang)
     if verify is VerifyMode.NONE:
         return None
@@ -418,7 +434,7 @@ def _build_verifier(
     except LLMError as exc:
         raise _fail(str(exc)) from exc
     return ContentVerifier(
-        transcriber=FasterWhisperTranscriber(whisper_model),
+        transcriber=FasterWhisperTranscriber(whisper_model, device=device.value),
         llm=CachedLLM(backend, default_llm_cache_dir()),
         lang=lang,
         transcript_cache=TranscriptCache(default_transcript_cache_dir()),
@@ -464,6 +480,7 @@ def plan(
     llm: LLMOpt = None,
     llm_model: LLMModelOpt = None,
     whisper_model: WhisperOpt = None,
+    whisper_device: WhisperDeviceOpt = None,
     lang: LangOpt = None,
     action: ActionOpt = None,
     include_titles: TitlesOpt = None,
@@ -481,7 +498,14 @@ def plan(
         action, include_titles, extras, review, verify, assign,
     )  # fmt: skip
     verifier = _build_verifier(
-        settings, request.verify, llm, llm_model, whisper_model, lang, quiet=json_out
+        settings,
+        request.verify,
+        llm,
+        llm_model,
+        whisper_model,
+        whisper_device,
+        lang,
+        quiet=json_out,
     )
     interactive = not yes and not json_out and _stdin_is_terminal()
     run = _run_pipeline(request, interactive=interactive, verifier=verifier)
@@ -508,6 +532,7 @@ def apply(
     llm: LLMOpt = None,
     llm_model: LLMModelOpt = None,
     whisper_model: WhisperOpt = None,
+    whisper_device: WhisperDeviceOpt = None,
     lang: LangOpt = None,
     action: ActionOpt = None,
     include_titles: TitlesOpt = None,
@@ -537,7 +562,14 @@ def apply(
     if do_apply and json_out and not yes:
         raise _fail("--json with --apply needs --yes (there's no prompt in JSON mode)")
     verifier = _build_verifier(
-        settings, request.verify, llm, llm_model, whisper_model, lang, quiet=json_out
+        settings,
+        request.verify,
+        llm,
+        llm_model,
+        whisper_model,
+        whisper_device,
+        lang,
+        quiet=json_out,
     )
     terminal = _stdin_is_terminal()
     run = _run_pipeline(
@@ -709,6 +741,7 @@ def transcribe(
         bool, typer.Option("--all", help="Include Play-All, extras, and junk titles.")
     ] = False,
     whisper_model: WhisperOpt = None,
+    whisper_device: WhisperDeviceOpt = None,
     lang: LangOpt = None,
     opening: Annotated[
         bool, typer.Option("--opening", help="Also transcribe a slice near the start.")
@@ -722,6 +755,7 @@ def transcribe(
     require_ffprobe()
     settings = _settings()
     whisper_model = _pick(whisper_model, settings.matching.whisper_model)
+    device = _pick(whisper_device, WhisperDevice(settings.matching.whisper_device))
     lang = _pick(lang, settings.matching.lang)
     if whisper_model not in WHISPER_MODELS:
         raise _fail(f"--whisper-model must be one of {', '.join(WHISPER_MODELS)}")
@@ -739,7 +773,7 @@ def transcribe(
         raise _fail(
             f"not found in {rip_dir}: {', '.join(sorted(wanted - {t.path.name for t in targets}))}"
         )
-    transcriber = FasterWhisperTranscriber(whisper_model)
+    transcriber = FasterWhisperTranscriber(whisper_model, device=device.value)
     cache = None if no_cache else TranscriptCache(default_transcript_cache_dir())
     results: list[FileTranscript] = []
     for media in targets:
