@@ -425,4 +425,8 @@ When starting, ask the user about these and record answers in this file:
   - Duplicate wording: "another cut of the same episode" only for episode-length titles; other lengths read "probably extra material from that episode (deleted or extended scenes)". This is judged by classification, not TMDB runtime, because TMDB may list the other cut's length.
   - S2D4 put the longer cuts (t09 29:57, t10 25:15, matching TMDB's 30/26 min) in the library; the 22-minute broadcast cuts (t07, t08) are in `_review`. The user may prefer the other cut.
   - Fixtures: `tests/fixtures/real/parks_s2_d4.json` and `tests/fixtures/tmdb/tv_8592_season_2.json`, with a replay test of Claude's real answers.
+- 2026-11-23: Development moved to a second desktop (also Linux Mint 22.3). `.venv`, tool caches, and `.device-info` were deleted and rebuilt here: `uv sync --locked` (uv 0.13.9, installed with `pipx install uv`; `uv.lock` unchanged), `.device-info` from `inxi -Fxxxz -c0`. Tests, ruff, mypy, a live TMDB search, and the real-Whisper eval all pass.
+  - Hardware here: Ryzen 7 5700X (8C/16T), 32 GB RAM, NVIDIA GTX 1080 Ti (11 GB, driver 580) plus an Intel Arc card. This replaces the hardware note in the first real-data entry above.
+  - Whisper still runs on CPU int8 (the transcriber's device is fixed in code). CTranslate2 does see the CUDA device (int8/float32) and cuBLAS 12 is installed system-wide, but cuDNN is not, so GPU transcription would need cuDNN plus a device option. Not done; ask first.
+  - Caches, config, and manifests live in per-user XDG directories and were not carried over. Manifests from the first machine's applies are not on this one, so those runs can't be undone from here.
 
